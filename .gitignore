@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+tests/.captures/
+
+# Conversations de l'agence (npm run agence) : restent sur le Mac
+.claude/agence/

@@ -1,0 +1,14 @@
+{
+  "name": "agence",
+  "version": "1.0.0",
+  "private": true,
+  "description": "L'Agence d'Evan : une agence de communication interne, avec des agents Claude Code, en local sur le Mac.",
+  "type": "module",
+  "scripts": {
+    "agence": "node scripts/agence.mjs",
+    "test": "node tests/lancer.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.12.0"
+  }
+}
