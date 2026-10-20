@@ -4,3 +4,6 @@ tests/.captures/
 
 # Conversations de l'agence (npm run agence) : restent sur le Mac
 .claude/agence/
+
+# Copies de travail que Claude Code pourrait créer
+.claude/worktrees/

@@ -19,8 +19,12 @@ try {
   const page = await nav.newPage();
   page.on('console', m => { if (m.type() === 'error') erreursConsole.push(m.text()); });
   page.on('pageerror', e => erreursConsole.push(String(e)));
-  let alerte = false;
-  page.on('dialog', d => { if (d.type() === 'alert') alerte = true; d.accept(); });
+  let alerte = false, confirmations = 0, repondre = true;
+  page.on('dialog', d => {
+    if (d.type() === 'alert') alerte = true;
+    if (d.type() === 'confirm') { confirmations++; return repondre ? d.accept() : d.dismiss(); }
+    d.accept();
+  });
   await page.setViewport({ width: 1440, height: 900 });
   await page.goto(a.adresse);
   await page.waitForSelector('.poste');
@@ -59,12 +63,26 @@ try {
   verifier(titres.includes('Proposition de Inès'), 'la proposition d\'Inès s\'ouvre dans une fenêtre');
   verifier(titres.includes('À toi de décider'), 'le choix s\'ouvre dans une fenêtre');
   verifier(titres.includes('insights.md'), 'le fichier à valider s\'ouvre dans une fenêtre');
-  verifier(await page.$eval('.poste[data-v="production"] .badge', b => b.textContent) === '1', 'le studio affiche 1 fichier à valider');
+  verifier(titres.includes('brief-reformule.md'), 'un fichier proposé avant l\'appel d\'un agent s\'ouvre aussi');
+  verifier(await page.$eval('.poste[data-v="production"] .badge', b => b.textContent) === '2', 'le studio affiche 2 fichiers à valider');
   await capture('4-fenetres');
 
   console.log('Sécurité de l\'affichage');
   verifier(await page.$$eval('.fenetre .md', l => l.some(x => x.textContent.includes('<script>alert(1)</script>'))), 'un <script> proposé est affiché comme du texte');
   verifier(!alerte && !(await page.$('.fenetre .md script')), 'aucun script injecté ne s\'exécute');
+  const liens = await page.$$eval('.fenetre .md a', l => l.map(a => a.getAttributeNames().sort().join(',')));
+  verifier(liens.length > 0 && liens.every(n => n === 'href,rel,target'), 'un lien piégé ne glisse aucun attribut en plus');
+  const essais = await page.evaluate(() => {
+    const t0 = performance.now(); md('['.repeat(60000)); const crochets = performance.now() - t0;
+    let profond = 'ok'; try { md('>'.repeat(5000) + ' x'); } catch (e) { profond = String(e); }
+    const d = document.createElement('div');
+    d.innerHTML = md('[a](https://a.fr/(https://b.fr/style=color:red;)');
+    const lienPropre = [...d.querySelectorAll('a')].every(a => a.getAttributeNames().sort().join(',') === 'href,rel,target' && !a.querySelector('a') && /^https:\/\/[^"]+$/.test(a.getAttribute('href')));
+    return { crochets, profond, lienPropre };
+  });
+  verifier(essais.crochets < 300, `une ligne de 60 000 « [ » se met en forme vite (${Math.round(essais.crochets)} ms)`);
+  verifier(essais.profond === 'ok', '5 000 citations imbriquées ne font pas planter la page');
+  verifier(essais.lienPropre, 'un lien dans un lien ne casse pas le HTML');
 
   console.log('Valider au studio');
   const devant = async nom => {
@@ -72,6 +90,18 @@ try {
     for (const h of poignees) if (await h.$eval('strong', s => s.textContent) === nom) { const b = await h.boundingBox(); await page.mouse.click(b.x + 200, b.y + 15); }
     await attendre(100);
   };
+  await devant('brief-reformule.md');
+  console.log('Une fenêtre modifiée ne se perd pas');
+  await page.evaluate(() => { const w = [...document.querySelectorAll('.fenetre')].find(w => w.querySelector('strong').textContent === 'brief-reformule.md'); w.querySelector('[data-v="modifier"]').click(); });
+  await page.evaluate(() => { const w = [...document.querySelectorAll('.fenetre')].find(w => w.querySelector('strong').textContent === 'brief-reformule.md'); const e = w.querySelector('.edition'); e.focus(); });
+  await page.keyboard.type(' ajout');
+  repondre = false;
+  await page.keyboard.press('Escape');
+  await attendre(100);
+  verifier(confirmations === 1 && await page.evaluate(() => [...document.querySelectorAll('.fenetre strong')].some(s => s.textContent === 'brief-reformule.md')), 'Échap demande confirmation, et « Annuler » garde la fenêtre et le texte');
+  repondre = true;
+  await page.evaluate(() => { const w = [...document.querySelectorAll('.fenetre')].find(w => w.querySelector('strong').textContent === 'brief-reformule.md'); w.querySelector('[data-v="refuser"]').click(); });
+  await attendre(300);
   await devant('insights.md');
   await page.click('[data-a="decider"][data-v="valider"]');
   await page.waitForFunction(() => !document.querySelector('[data-a="decider"]'), { timeout: 5000 });

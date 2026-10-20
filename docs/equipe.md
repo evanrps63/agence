@@ -49,9 +49,13 @@ Pour un projet de **cours**, l'agence t'aide à réfléchir : elle explique, cha
 ## Les protections (toujours actives)
 
 - La page ne répond **que sur ton Mac** (127.0.0.1) et demande un **jeton secret**, nouveau à chaque lancement, caché dans l'adresse ouverte par `npm run agence`.
-- Les agents sont **en lecture seule** : pas de commande, pas d'écriture. Ils proposent ; le serveur écrit **seulement dans `projets/<projet>/`**, en `.md`, après ton clic.
-- Un fichier proposé ailleurs (autre projet, `../`) est refusé et signalé en rouge dans le chat.
-- **Rien ne part sur GitHub** sans ton clic sur « Envoyer sur GitHub ».
+- Les agents sont **en lecture seule** : pas de commande, pas d'écriture. Ils ne lisent que le dossier de l'agence, sauf les conversations (`.claude/agence/`) et le dossier git (`.git/`). Ils proposent ; le serveur écrit **seulement dans `projets/<projet>/`**, en `.md`, après ton clic.
+- Un fichier proposé ailleurs (autre projet, `../`, sous-dossier, nom réservé comme `CLAUDE.md`) est refusé et signalé en rouge dans le chat ; son contenu reste lisible dans une proposition.
+- Une proposition plus ancienne d'un même fichier ne peut pas écraser la nouvelle, ni un fichier que tu as modifié à la main depuis.
+- Claire ne peut appeler que les 7 agents de l'équipe (garde-fou `scripts/garde-agents.mjs`).
+- Si Claude Code est trop ancien (sans le mode restreint), l'agence refuse de lancer les agents et te dit de taper `claude update`.
+- **Rien ne part sur GitHub** sans ton clic sur « Envoyer sur GitHub », et seulement des livrables du dossier `projets/` : si du code de l'agence attend d'être envoyé, l'envoi est refusé avec une explication.
+- Fermer la fenêtre du Terminal arrête aussi les agents en cours (pas de crédits consommés dans le vide).
 - Garde-fou pour les sessions Claude Code ouvertes à la main dans ce dossier : `.claude/hooks/garde-fous.py` (pas de `git add -A`, confirmation avant `git push`).
 - Les conversations restent sur ton Mac, dans `.claude/agence/` (jamais envoyées sur GitHub).
 
@@ -59,5 +63,6 @@ Pour un projet de **cours**, l'agence t'aide à réfléchir : elle explique, cha
 
 - Les agents suivent des **consignes**, pas des verrous : vérifie toujours les sources qu'ils citent (le Jury en contrôle quelques-unes).
 - Le contenu d'une page web peut contenir des instructions piégées : les agents ont pour consigne de les ignorer et de te les signaler. Ils ne peuvent de toute façon rien écrire sans toi.
+- Les agents qui cherchent sur le web (Inès, Max, Sam, Nora, le Jury) peuvent ouvrir n'importe quelle adresse. Une page piégée pourrait donc, en théorie, pousser un agent à envoyer le contenu du projet ouvert vers un site. Ne mets pas d'informations confidentielles d'un client (contrats, données personnelles) dans un projet.
 - Chaque message coûte un peu de crédit Claude : le coût s'affiche sous chaque réponse. Une reco complète avec toute l'équipe coûte plus qu'une question. Bouton **Arrêter** toujours disponible.
 - Pour changer un prénom : la ligne `prenom:` dans `.claude/agents/<agent>.md`, puis relance l'agence.

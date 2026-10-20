@@ -317,7 +317,8 @@ h1, h2, h3 { font-family: var(--titre); font-weight: 600; margin: 0; }
 
 @media (max-width: 960px) {
   body { overflow-y: auto; overflow-x: hidden; }
-  .plateau { grid-template-columns: 1fr; flex: none; }
+  .plateau { grid-template-columns: minmax(0, 1fr); flex: none; }
+  .locaux, .chat { min-width: 0; }
   .locaux { overflow: visible; padding: 16px; }
   .poste { min-width: 64px; }
   .poste .role { display: none; }

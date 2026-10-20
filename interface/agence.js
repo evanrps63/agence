@@ -5,7 +5,7 @@
 const JETON = (location.hash.match(/jeton=([0-9a-f]+)/) || [])[1] || '';
 const E = {
   equipe: [], pilote: 'clientele', projets: [], fils: {}, enCours: new Set(), fil: 'agence:-', projet: null,
-  actifs: new Set(), live: {}, pret: true, github: false, charge: false, demo: false
+  actifs: new Map(), live: {}, pret: true, github: false, charge: false, demo: false
 };
 const PRODUCTION = { id: 'production', prenom: 'Studio', poste: 'Poste de production', piece: 'studio', couleur: '#57534e', description: 'Rédige les livrables. Chaque fichier t\'est montré avant d\'être écrit : tu valides ou tu refuses.' };
 const CIRCUIT = [
@@ -39,8 +39,13 @@ async function api(chemin, corps) {
   const r = await fetch(chemin, corps === undefined ? { headers: { 'X-Jeton': JETON } }
     : { method: 'POST', headers: { 'X-Jeton': JETON, 'Content-Type': 'application/json' }, body: JSON.stringify(corps) });
   let json = {}; try { json = await r.json(); } catch {}
+  if (r.status === 403 && json.erreur === 'jeton refusé') perimee();
   if (!r.ok) throw new Error(json.erreur || 'erreur ' + r.status);
   return json;
+}
+// L'agence a été relancée (nouveau jeton) ou fermée : cet onglet ne peut plus rien faire
+function perimee() {
+  toast('Cette page n\'est plus reliée à l\'agence (elle a été relancée ou fermée). Ferme cet onglet : npm run agence ouvre la bonne page.', 0);
 }
 let minuterieToast;
 function toast(texte, duree = 3500) {
@@ -50,15 +55,19 @@ function toast(texte, duree = 3500) {
 }
 
 // ---------- Texte mis en forme (Markdown simple, tout est échappé d'abord) ----------
+const LIEN = (url, texte) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${texte}</a>`;
 function enLigne(t) {
+  // Une ligne géante n'est pas mise en forme (évite de figer la page)
+  if (t.length > 5000) return esc(t);
   return esc(t)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\w)/g, '$1<em>$2</em>')
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+    // Liens [texte](url) et adresses nues en une seule passe : le HTML produit n'est jamais relu
+    .replace(/\[([^\[\]]+)\]\((https?:\/\/[^\s()"<>]+)\)|(^|[\s(])(https?:\/\/[^\s()"<>]+)/g,
+      (tout, texte, url, avant, nue) => texte !== undefined ? LIEN(url, texte) : avant + LIEN(nue, nue));
 }
-function md(source) {
+function md(source, profondeur = 0) {
   const l = String(source || '').replace(/\r/g, '').split('\n');
   const out = [];
   const debutBloc = s => /^(```|#{1,4}\s|>\s?|\s*([-*+]|\d+[.)])\s+|\|)/.test(s) || /^(-{3,}|\*{3,})\s*$/.test(s);
@@ -76,7 +85,7 @@ function md(source) {
     if (/^>\s?/.test(s)) {
       const q = [];
       while (i < l.length && /^>\s?/.test(l[i])) q.push(l[i++].replace(/^>\s?/, ''));
-      out.push(`<blockquote>${md(q.join('\n'))}</blockquote>`); continue;
+      out.push(`<blockquote>${profondeur < 6 ? md(q.join('\n'), profondeur + 1) : `<p>${esc(q.join(' '))}</p>`}</blockquote>`); continue;
     }
     if (s.trim().startsWith('|') && l[i + 1] && /^\s*\|?\s*:?-{2,}/.test(l[i + 1])) {
       const cellules = x => x.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
@@ -103,6 +112,8 @@ function md(source) {
   }
   return out.join('');
 }
+// md() protégé : en cas d'erreur, le texte brut reste lisible
+function mdSur(t) { try { return md(t); } catch (e) { console.error(e); return `<pre>${esc(t)}</pre>`; } }
 const apercu = t => String(t || '').replace(/[#*`>|_]/g, '').replace(/\s+/g, ' ').trim().slice(0, 180);
 
 // ---------- Avatars ----------
@@ -148,7 +159,7 @@ ${avatar(a.id)}<span class="table"></span><span class="nom">${esc(a.prenom)}</sp
   }
 }
 function estActif(id) {
-  if (E.actifs.has(id)) return true;
+  for (const s of E.actifs.values()) if (s.has(id)) return true;
   if (id === E.pilote && [...E.enCours].some(estAgence)) return true;
   if (id === 'production' && enAttente()) return false;
   return E.enCours.has(id);
@@ -205,7 +216,7 @@ function majCircuitDirect() {
   if (messages(f).length) vus.add(0);
   if (messages(f).some(m => m.de === 'agent')) vus.add(1);
   if (messages(f).some(m => m.de === 'fichier' && m.statut === 'valide')) vus.add(7);
-  const encours = [...E.actifs].map(etapeDe).filter(i => i >= 0);
+  const encours = [...(E.actifs.get(f) || [])].map(etapeDe).filter(i => i >= 0);
   if (enMarche && !encours.length) encours.push(1);
   marquerCircuit(encours, [...vus]);
   $('#legende').textContent = enMarche
@@ -250,6 +261,10 @@ function rendreTete() {
   }
 }
 function rendreMessage(m, f) {
+  try { return rendreMessageBrut(m, f); }
+  catch (e) { console.error(e); return `<div class="etape alerte"><span class="pastille"></span>Message illisible : ${esc(String(m && (m.texte || m.question || m.chemin) || '').slice(0, 200))}</div>`; }
+}
+function rendreMessageBrut(m, f) {
   const a = agent(m.agent);
   const style = `style="--couleur:${esc(a.couleur)}"`;
   switch (m.de) {
@@ -260,14 +275,15 @@ function rendreMessage(m, f) {
       return `<div class="msg agent${m.erreur ? ' erreur' : ''}${estAgence(f) ? '' : ' direct'}">${avatar(m.agent || f)}<div class="corps"><div class="qui">${esc(agent(m.agent || f).prenom)}</div><div class="md">${md(m.texte)}</div>${pied}</div></div>`;
     }
     case 'proposition':
-      return `<div class="carte" ${style} data-a="ouvrir" data-v="${esc(m.id)}" role="button" tabindex="0">${avatar(m.agent)}<div class="infos"><div class="titre">Proposition de ${esc(a.prenom)}</div><div class="apercu">${esc(apercu(m.texte))}</div></div><span class="etiquette">Ouvrir</span></div>`;
+      return `<div class="carte" ${style} data-a="ouvrir" data-v="${esc(m.id)}" role="button" tabindex="0">${avatar(m.agent)}<div class="infos"><div class="titre">${esc(m.titre || 'Proposition de ' + a.prenom)}</div><div class="apercu">${esc(apercu(m.texte))}</div></div><span class="etiquette">Ouvrir</span></div>`;
     case 'choix': {
       const fait = m.reponse !== null && m.reponse !== undefined;
-      const etiquette = fait ? `<span class="etiquette valide">Choisi : ${esc(m.options[m.reponse].titre)}</span>` : '<span class="etiquette attente">À toi de choisir</span>';
+      const etiquette = fait ? `<span class="etiquette valide">Choisi : ${esc(m.options[m.reponse].titre)}</span>`
+        : m.depasse ? '<span class="etiquette">Dépassé</span>' : '<span class="etiquette attente">À toi de choisir</span>';
       return `<div class="carte" ${style} data-a="ouvrir" data-v="${esc(m.id)}" role="button" tabindex="0">${avatar(m.agent)}<div class="infos"><div class="titre">Décision : ${esc(m.question)}</div><div class="apercu">${m.options.map(o => esc(o.titre)).join(' · ')}</div></div>${etiquette}</div>`;
     }
     case 'fichier': {
-      const etiquettes = { attente: '<span class="etiquette attente">À valider</span>', valide: '<span class="etiquette valide">Enregistré</span>', refuse: '<span class="etiquette refuse">Refusé</span>' };
+      const etiquettes = { attente: '<span class="etiquette attente">À valider</span>', valide: '<span class="etiquette valide">Enregistré</span>', refuse: '<span class="etiquette refuse">Refusé</span>', remplace: '<span class="etiquette">Remplacé</span>' };
       return `<div class="carte" style="--couleur:${PRODUCTION.couleur}" data-a="ouvrir" data-v="${esc(m.id)}" role="button" tabindex="0">${avatar('production')}<div class="infos"><div class="titre">Fichier : ${esc(m.chemin.split('/').pop())}</div><div class="apercu">${esc(apercu(m.contenu))}</div></div>${etiquettes[m.statut] || ''}</div>`;
     }
   }
@@ -278,7 +294,7 @@ function rendreFil() {
   const bas = zone.scrollHeight - zone.scrollTop - zone.clientHeight < 80;
   const liste = messages(f);
   let html = liste.map(m => rendreMessage(m, f)).join('');
-  if (E.live[f]) html += `<div class="msg agent en-direct">${avatar(estAgence(f) ? E.pilote : f)}<div class="corps"><div class="md">${md(E.live[f])}</div></div></div>`;
+  if (E.live[f]) html += `<div class="msg agent en-direct">${avatar(estAgence(f) ? E.pilote : f)}<div class="corps"><div class="md">${mdSur(E.live[f])}</div></div></div>`;
   if (!liste.length && !E.live[f]) html = vide();
   zone.innerHTML = html;
   if (bas || !liste.length) zone.scrollTop = zone.scrollHeight;
@@ -307,7 +323,7 @@ function ajusterSaisie() {
 }
 function changerFil(f) {
   E.fil = f;
-  fermerTout(true);
+  fermerTout(true, true);
   rendreTete(); rendreFil(); majPostes(); majCircuitDirect();
   ouvrirEnAttente();
   $('#texte').focus();
@@ -354,6 +370,8 @@ function fenetre({ cle, agentId, titre, sous, html, bas = '', importante = false
   }
   w.style.zIndex = ++rang;
   w.addEventListener('pointerdown', () => { w.style.zIndex = ++rang; });
+  // Dès qu'on écrit dedans, la fenêtre ne se ferme plus sans confirmation
+  w.addEventListener('input', () => { w.dataset.modifie = '1'; });
   deplacable(w);
   return w;
 }
@@ -372,14 +390,20 @@ function deplacable(w) {
     poignee.addEventListener('pointerup', fin);
   });
 }
-function fermer(w) {
-  if (!w) return;
+function fermer(w, force) {
+  if (!w) return false;
+  if (w.dataset.modifie && !force && !confirm('Fermer cette fenêtre ? Ce que tu y as écrit sera perdu.')) return false;
   w.remove();
   if (!document.querySelector('.fenetre[data-modale]')) $('#voile').hidden = true;
   if (!document.querySelector('.fenetre')) pile = 0;
+  return true;
 }
-function fermerTout(saufModales) {
-  for (const w of document.querySelectorAll('.fenetre')) if (!(saufModales && w.dataset.modale)) fermer(w);
+function fermerTout(saufModales, saufModifiees) {
+  for (const w of document.querySelectorAll('.fenetre')) {
+    if (saufModales && w.dataset.modale) continue;
+    if (saufModifiees && w.dataset.modifie) continue;
+    fermer(w, true);
+  }
 }
 function trouver(id) {
   for (const [f, c] of Object.entries(E.fils)) { const m = c.messages.find(x => x.id === id); if (m) return [f, m]; }
@@ -389,23 +413,25 @@ function ouvrirMessage(m, f) {
   const a = agent(m.agent);
   if (m.de === 'proposition') {
     fenetre({
-      cle: m.id, agentId: m.agent, titre: `Proposition de ${a.prenom}`, sous: a.poste, html: `<div class="md">${md(m.texte)}</div>`,
+      cle: m.id, agentId: m.agent, titre: m.titre || `Proposition de ${a.prenom}`, sous: a.poste, html: `<div class="md">${mdSur(m.texte)}</div>`,
       bas: `<span class="aide">Une retouche ? Écris-la dans le chat.</span><button class="bouton" data-a="retoucher" data-v="${esc(m.id)}">Demander une retouche</button><button class="bouton principal" data-a="fermer">Lu</button>`
     });
   } else if (m.de === 'choix') {
     const fait = m.reponse !== null && m.reponse !== undefined;
-    const options = m.options.map((o, i) => `<button class="option${fait && m.reponse === i ? ' choisie' : ''}" data-a="choisir" data-v="${i}" data-id="${esc(m.id)}" ${fait ? 'disabled' : ''}>${o.conseil ? '<span class="conseil">Conseillé</span>' : ''}<strong>${esc(o.titre)}</strong><span>${esc(o.detail)}</span></button>`).join('');
+    const ferme = fait || m.depasse;
+    const options = m.options.map((o, i) => `<button class="option${fait && m.reponse === i ? ' choisie' : ''}" data-a="choisir" data-v="${i}" data-id="${esc(m.id)}" ${ferme ? 'disabled' : ''}>${o.conseil ? '<span class="conseil">Conseillé</span>' : ''}<strong>${esc(o.titre)}</strong><span>${esc(o.detail)}</span></button>`).join('');
     fenetre({
-      cle: m.id, agentId: m.agent, titre: fait ? 'Décision prise' : 'À toi de décider', sous: `${a.prenom} attend ta réponse`, importante: !fait, largeur: 600,
-      html: `<p class="question">${esc(m.question)}</p><div class="options">${options}</div>${fait ? '' : '<textarea class="precision" placeholder="Une précision pour l\'équipe ? (facultatif)"></textarea>'}`,
-      bas: fait ? '<button class="bouton" data-a="fermer">Fermer</button>' : '<span class="aide">Clique sur l\'option que tu retiens.</span>'
+      cle: m.id, agentId: m.agent, titre: fait ? 'Décision prise' : m.depasse ? 'Décision dépassée' : 'À toi de décider',
+      sous: m.depasse && !fait ? 'La conversation a continué depuis' : `${a.prenom} attend ta réponse`, importante: !ferme, largeur: 600,
+      html: `<p class="question">${esc(m.question)}</p><div class="options">${options}</div>${ferme ? '' : '<textarea class="precision" placeholder="Une précision pour l\'équipe ? (facultatif)"></textarea>'}`,
+      bas: ferme ? '<button class="bouton" data-a="fermer">Fermer</button>' : '<span class="aide">Clique sur l\'option que tu retiens.</span>'
     }).dataset.fil = f;
   } else if (m.de === 'fichier') {
     const attente = m.statut === 'attente';
-    const etat = { attente: m.existe ? 'Remplacera la version actuelle' : 'Nouveau fichier', valide: 'Enregistré', refuse: 'Refusé, rien n\'a été écrit' }[m.statut];
+    const etat = { attente: m.existe ? 'Remplacera la version actuelle' : 'Nouveau fichier', valide: 'Enregistré', refuse: 'Refusé, rien n\'a été écrit', remplace: 'Remplacé par une version plus récente' }[m.statut];
     const w = fenetre({
       cle: m.id, agentId: 'production', titre: m.chemin.split('/').pop(), sous: `Studio · ${etat}`, importante: attente, largeur: 680,
-      html: `<p class="chemin">${esc(m.chemin)}</p>${attente ? '<div class="onglets"><button class="actif" data-a="onglet" data-v="apercu">Aperçu</button><button data-a="onglet" data-v="modifier">Modifier</button></div>' : ''}<div class="md" data-vue="apercu">${md(m.contenu)}</div>${attente ? `<textarea class="edition" data-vue="modifier" hidden>${esc(m.contenu)}</textarea>` : ''}`,
+      html: `<p class="chemin">${esc(m.chemin)}${m.tronque ? ' · trop long, coupé à 200 000 caractères' : ''}</p>${attente ? '<div class="onglets"><button class="actif" data-a="onglet" data-v="apercu">Aperçu</button><button data-a="onglet" data-v="modifier">Modifier</button></div>' : ''}<div class="md" data-vue="apercu">${mdSur(m.contenu)}</div>${attente ? `<textarea class="edition" data-vue="modifier" hidden>${esc(m.contenu)}</textarea>` : ''}`,
       bas: attente ? `<span class="aide">Rien n'est écrit sans ton clic.</span><button class="bouton refuser" data-a="decider" data-v="refuser" data-id="${esc(m.id)}">Refuser</button><button class="bouton valider" data-a="decider" data-v="valider" data-id="${esc(m.id)}">Valider et enregistrer</button>` : '<button class="bouton" data-a="fermer">Fermer</button>'
     });
     w.dataset.fil = f;
@@ -413,7 +439,7 @@ function ouvrirMessage(m, f) {
 }
 function ouvrirEnAttente() {
   for (const m of messages(E.fil)) {
-    if ((m.de === 'choix' && (m.reponse === null || m.reponse === undefined)) || (m.de === 'fichier' && m.statut === 'attente')) ouvrirMessage(m, E.fil);
+    if ((m.de === 'choix' && (m.reponse === null || m.reponse === undefined) && !m.depasse) || (m.de === 'fichier' && m.statut === 'attente')) ouvrirMessage(m, E.fil);
   }
 }
 function fenetreBrief() {
@@ -423,7 +449,7 @@ function fenetreBrief() {
     html: `<form id="form-brief">
 <label class="champ"><span>Nom du projet</span><input name="nom" maxlength="80" placeholder="Ex. Oasis, campagne été 2027" required></label>
 <div class="champ"><span>Type</span><div class="types">${types.map(([v, t, d], i) => `<label><input type="radio" name="type" value="${v}" ${i ? '' : 'checked'}>${t}<small>${d}</small></label>`).join('')}</div></div>
-<label class="champ"><span>Le brief</span><textarea name="texte" placeholder="Colle le brief : la demande, le livrable, la date de rendu, les consignes et la grille du prof si tu les as." required></textarea></label>
+<label class="champ"><span>Le brief</span><textarea name="texte" maxlength="30000" placeholder="Colle le brief : la demande, le livrable, la date de rendu, les consignes et la grille du prof si tu les as." required></textarea></label>
 </form>
 <div class="separateur">Juste une petite demande ? Va directement au bon bureau</div>
 <div class="orienter">${ORIENTER.map(([id, t]) => `<button data-a="orienter" data-v="${id}">${avatar(id)}<span><strong>${esc(agent(id).prenom)}</strong><br>${esc(t)}</span></button>`).join('')}</div>`,
@@ -514,7 +540,7 @@ document.addEventListener('click', async ev => {
       const precision = w.querySelector('.precision')?.value || '';
       for (const b of w.querySelectorAll('.option')) b.disabled = true;
       cible.classList.add('choisie');
-      try { await api('/api/choisir', { fil: w.dataset.fil, id: cible.dataset.id, option: Number(v), precision }); setTimeout(() => fermer(w), 600); }
+      try { await api('/api/choisir', { fil: w.dataset.fil, id: cible.dataset.id, option: Number(v), precision }); setTimeout(() => fermer(w, true), 600); }
       catch (e) { toast(e.message); for (const b of w.querySelectorAll('.option')) b.disabled = false; cible.classList.remove('choisie'); }
       break;
     }
@@ -524,7 +550,7 @@ document.addEventListener('click', async ev => {
       const [, m] = trouver(cible.dataset.id);
       if (v === 'valider' && ed && m && ed.value !== m.contenu) corps.contenu = ed.value;
       for (const b of w.querySelectorAll('[data-a="decider"]')) b.disabled = true;
-      try { await api('/api/fichier', corps); toast(v === 'valider' ? 'Fichier enregistré.' : 'Fichier refusé, rien n\'est écrit.'); fermer(w); }
+      try { await api('/api/fichier', corps); toast(v === 'valider' ? 'Fichier enregistré.' : 'Fichier refusé, rien n\'est écrit.'); fermer(w, true); }
       catch (e) { toast(e.message); for (const b of w.querySelectorAll('[data-a="decider"]')) b.disabled = false; }
       break;
     }
@@ -535,7 +561,7 @@ document.addEventListener('click', async ev => {
       cible.disabled = true;
       try {
         const r = await api('/api/brief', { nom: d.get('nom'), type: d.get('type'), texte: d.get('texte') });
-        fermer(w);
+        fermer(w, true);
         if (!E.projets.some(p => p.slug === r.projet)) E.projets.unshift({ slug: r.projet, nom: d.get('nom'), type: d.get('type'), fichiers: ['brief.md'] });
         rendreProjets();
         changerProjet(r.projet);
@@ -553,9 +579,9 @@ document.addEventListener('click', async ev => {
       if (!E.projet) { toast('Choisis d\'abord un projet.'); break; }
       if (!E.github) { toast('Ce dossier n\'est relié à aucun dépôt GitHub.'); break; }
       const p = E.projets.find(x => x.slug === E.projet);
-      if (!confirm(`Envoyer le dossier « ${p ? p.nom : E.projet} » sur GitHub ?\n\nSeuls les fichiers de projets/${E.projet}/ partent.`)) break;
+      if (!confirm(`Envoyer le dossier « ${p ? p.nom : E.projet} » sur GitHub ?\n\nSeuls des livrables (dossier projets/) partent, jamais le code de l'agence.`)) break;
       cible.disabled = true;
-      try { await api('/api/github', { fil: filAgence() }); toast('Envoyé sur GitHub.'); }
+      try { const r = await api('/api/github', { fil: filAgence() }); toast(r.message || 'Envoyé sur GitHub.'); }
       catch (e) { toast(e.message, 8000); }
       cible.disabled = false;
       break;
@@ -566,7 +592,7 @@ document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape') {
     document.querySelector('.menu-poste')?.remove();
     const ws = [...document.querySelectorAll('.fenetre')].sort((a, b) => b.style.zIndex - a.style.zIndex);
-    if (ws[0]) fermer(ws[0]);
+    if (ws[0]) { ev.preventDefault(); fermer(ws[0]); }
   }
   if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.classList?.contains('carte')) { ev.preventDefault(); ev.target.click(); }
 });
@@ -586,16 +612,22 @@ function recevoir(evt) {
     case 'bonjour': if (E.charge) charger(); break;
     case 'debut': E.enCours.add(f); E.live[f] = ''; break;
     case 'texte': E.live[f] = (E.live[f] ? E.live[f] + '\n\n' : '') + evt.texte; break;
-    case 'fin': E.enCours.delete(f); delete E.live[f]; for (const a of [...E.actifs]) if (estAgence(f)) E.actifs.delete(a); break;
-    case 'actif':
-      if (evt.actif) { E.actifs.add(evt.agent); if (f === E.fil || estAgence(f)) envolerDossier(evt.agent); }
-      else E.actifs.delete(evt.agent);
+    case 'fin': E.enCours.delete(f); delete E.live[f]; E.actifs.delete(f); break;
+    case 'actif': {
+      const s = E.actifs.get(f) || new Set();
+      if (evt.actif) { s.add(evt.agent); if (f === E.fil) envolerDossier(evt.agent); }
+      else s.delete(evt.agent);
+      E.actifs.set(f, s);
       break;
+    }
     case 'message': {
       const m = evt.message;
       messages(f).push(m);
       if (m.de === 'agent') delete E.live[f];
-      if (m.de === 'etape' && m.agent && !m.alerte) bulle(m.agent, m.texte.replace(new RegExp('^' + agent(m.agent).prenom + '\\s*:?\\s*'), ''));
+      if (m.de === 'etape' && m.agent && !m.alerte) {
+        const prenom = agent(m.agent).prenom;
+        bulle(m.agent, m.texte.startsWith(prenom) ? m.texte.slice(prenom.length).replace(/^\s*:?\s*/, '') : m.texte);
+      }
       if (m.de === 'fichier') bulle('production', 'Un fichier t\'attend : ' + m.chemin.split('/').pop());
       if (f === E.fil && ['proposition', 'choix', 'fichier'].includes(m.de)) ouvrirMessage(m, f);
       break;
@@ -605,7 +637,7 @@ function recevoir(evt) {
       if (i >= 0) liste[i] = evt.message;
       break;
     }
-    case 'oubli': E.fils[f] = { messages: [], cout: 0 }; break;
+    case 'oubli': E.fils[f] = { messages: [], cout: 0 }; if (f === E.fil) fermerTout(true, true); break;
     case 'projets': E.projets = evt.projets; rendreProjets(); rendreTete(); break;
   }
   if (f === E.fil || evt.type === 'actif' || evt.type === 'fin' || evt.type === 'debut') rendreFil();
@@ -615,6 +647,7 @@ function recevoir(evt) {
 async function charger() {
   const e = await api('/api/etat');
   Object.assign(E, { equipe: e.equipe, pilote: e.pilote, projets: e.projets, fils: e.fils, enCours: new Set(e.enCours), pret: e.pret, github: e.github });
+  E.actifs = new Map(Object.entries(e.actifs || {}).map(([f, l]) => [f, new Set(l)]));
   if (E.projet && !E.projets.some(p => p.slug === E.projet)) E.projet = null;
   if (!estAgence(E.fil) && !E.equipe.some(a => a.id === E.fil)) E.fil = filAgence();
   if (estAgence(E.fil)) E.fil = filAgence();
@@ -639,5 +672,9 @@ async function charger() {
   catch (e) { toast('Impossible de joindre l\'agence : ' + e.message + '. Relance npm run agence.', 0); return; }
   const source = new EventSource('/api/flux?jeton=' + JETON);
   source.onmessage = m => { try { recevoir(JSON.parse(m.data)); } catch (e) { console.error(e); } };
-  source.onerror = () => toast('Connexion perdue avec l\'agence. Elle revient toute seule si le Terminal est encore ouvert.', 4000);
+  source.onerror = () => {
+    // Fermée pour de bon (jeton refusé : l'agence a été relancée) ou simple coupure qui se répare toute seule
+    if (source.readyState === EventSource.CLOSED) perimee();
+    else toast('Connexion perdue avec l\'agence. Elle revient toute seule si le Terminal est encore ouvert.', 4000);
+  };
 })();
