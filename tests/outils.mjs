@@ -6,6 +6,8 @@ import path from 'path';
 import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
+// Le navigateur des tests dans ce conteneur ; sur un Mac, Google Chrome est trouvé tout seul
+const CHROME_TEST = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 export const code = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 let erreurs = 0;
 export function verifier(condition, message) {
@@ -46,7 +48,7 @@ export async function demarrer(options = {}) {
   const journal = path.join(racine, 'journal.jsonl');
   const port = 4400 + Math.floor(Math.random() * 500);
   const p = spawn(process.execPath, [path.join(code, 'scripts', 'agence.mjs')], {
-    env: { ...process.env, AGENCE_RACINE: racine, AGENCE_PORT: String(port), AGENCE_SANS_NAVIGATEUR: '1', CLAUDE_BIN: path.join(code, 'tests', 'faux-claude.mjs'), FAUX_CLAUDE_JOURNAL: journal, ...(options.env || {}) },
+    env: { ...process.env, AGENCE_RACINE: racine, AGENCE_PORT: String(port), AGENCE_SANS_NAVIGATEUR: '1', CLAUDE_BIN: path.join(code, 'tests', 'faux-claude.mjs'), FAUX_CLAUDE_JOURNAL: journal, ...(!process.env.CHROME_BIN && fs.existsSync(CHROME_TEST) ? { CHROME_BIN: CHROME_TEST } : {}), ...(options.env || {}) },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   let sortie = '';

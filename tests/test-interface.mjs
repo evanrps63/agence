@@ -142,12 +142,17 @@ try {
   verifier(await page.$eval('#destinataire', d => d.textContent.includes('Claire pilote')), 'retour au chat de l\'agence');
 
   console.log('Studio digital');
+  // Une image du projet, ajoutée comme le ferait Evan
+  await page.evaluate(async jeton => {
+    const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    await fetch('/api/image', { method: 'POST', headers: { 'X-Jeton': jeton, 'Content-Type': 'application/json' }, body: JSON.stringify({ projet: 'oasis-ete-2027', nom: 'test.png', donnees: PNG }) });
+  }, a.jeton);
   await page.type('#texte', 'SITE');
   await page.keyboard.press('Enter');
-  await page.waitForSelector('.fenetre iframe.apercu[src^="/apercu/"]', { timeout: 15000 });
+  await page.waitForSelector('.fenetre iframe.apercu[src^="/apercu/"]', { timeout: 60000 });
   await attendre(800);
   const cadre = page.frames().find(fr => fr.url().includes('/apercu/'));
-  verifier(cadre && await cadre.evaluate(() => document.body.dataset.ok === '1' && document.querySelector('h1').textContent === 'La reco Oasis'), 'la présentation de Jade s\'affiche en vrai dans la fenêtre du studio');
+  verifier(cadre && await cadre.evaluate(() => document.body.dataset.ok === '1' && document.querySelector('h1').textContent.startsWith('La reco Oasis') && document.images[0].naturalWidth > 0), 'la présentation de Jade s\'affiche en vrai dans la fenêtre du studio, avec l\'image du projet');
   verifier(!(await page.$eval('.fenetre iframe.apercu', f => f.src)).includes('jeton'), 'l\'aperçu ne connaît pas le jeton');
   await capture('8-studio-digital');
   await page.click('.fenetre [data-a="decider"][data-v="valider"]');

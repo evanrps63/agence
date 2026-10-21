@@ -475,3 +475,12 @@ button, select, textarea { font: inherit; color: inherit; }
 .cadre-apercu { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; border: 1px solid var(--trait); background: #fff; box-shadow: 0 3px 0 var(--relief); }
 .cadre-apercu iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .lien { border: none; background: none; padding: 0; color: var(--primaire); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+.atelier { font-size: 12.5px; color: var(--ok); background: var(--ok-doux); border-radius: 10px; padding: 7px 10px; margin: 0 0 10px; line-height: 1.45; }
+.atelier.alerte { color: var(--orange); background: var(--orange-doux); }
+.depot-images { border: 2px dashed var(--trait); border-radius: 14px; padding: 14px; text-align: center; font-size: 13px; color: var(--encre-2); }
+.depot-images.survol { border-color: var(--primaire); background: color-mix(in srgb, var(--primaire) 8%, transparent); }
+.galerie { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
+.galerie figure { margin: 0; }
+.galerie img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--trait); display: block; }
+.galerie figcaption { font-size: 11px; color: var(--encre-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

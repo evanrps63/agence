@@ -63,11 +63,19 @@ Pour un projet de **cours**, l'agence t'aide à réfléchir : elle explique, cha
 ## Les sites et présentations (Jade)
 
 - Demande-la dans le chat : « Jade, fais la présentation de la reco » ou « fais une landing page pour la campagne ». Ou clique sur le studio, puis « Écrire à Jade ».
-- Le fichier HTML s'ouvre au studio avec un **aperçu en vrai** (la présentation se joue dedans : flèches du clavier pour avancer). « Ouvrir en grand » l'affiche dans un onglet, F pour le plein écran. L'onglet « Code » permet de retoucher avant de valider.
-- Une fois validé, le fichier est dans `projets/<projet>/` : double-clique dessus dans le Finder pour l'ouvrir dans ton navigateur, même sans l'agence.
-- Pas de photos : Jade compose avec la typographie, la couleur et des illustrations dessinées. Là où une photo s'impose, elle laisse un cadre décrit, à remplacer par tes images.
-- C'est l'agent le plus cher (opus, et un gros fichier) : demande-le une fois la stratégie et l'idée validées.
-- L'aperçu est isolé : le code d'une présentation ne peut ni lire tes fichiers, ni parler à l'agence.
+- **Tes images** : ouvre « Dossier du projet » et glisse tes photos, maquettes ou visuels générés (PNG, JPG, WEBP, GIF, 10 Mo au plus). Tu peux aussi les déposer à la main dans `projets/<projet>/images/`. Jade les regarde et les place dans la présentation. Léa peut t'écrire les prompts pour les générer (Midjourney, ChatGPT, Firefly, Canva).
+- **L'atelier de rendu, avant que tu voies quoi que ce soit** :
+  1. Jade écrit le fichier ;
+  2. le studio l'ouvre dans un vrai navigateur (Google Chrome) et photographie chaque diapo, ou la page en ordinateur et en téléphone ; il repère les textes qui débordent, les erreurs, les images manquantes ;
+  3. Léa regarde les photos et critique en directrice artistique ;
+  4. Jade voit ses photos, la liste des défauts et la critique, et corrige ;
+  5. la version corrigée est rephotographiée, puis elle arrive au studio pour toi, avec un résumé (« Vu au navigateur · critiqué par Léa · corrigé par Jade »).
+- Tu suis tout dans le chat. Les photos sont rangées dans `.claude/rendus/` si tu veux les voir.
+- Il faut **Google Chrome** sur le Mac. Sans lui, le fichier arrive quand même, marqué « pas vu au navigateur ».
+- Nombre de corrections : 1 par défaut. `AGENCE_TOURS=2 npm run agence` pour deux tours (plus cher), `AGENCE_TOURS=0` pour seulement photographier et vérifier, sans critique.
+- Au studio, l'aperçu se joue en vrai (flèches pour avancer). « Ouvrir en grand » l'affiche dans un onglet, F pour le plein écran. Une fois validé, le fichier est dans `projets/<projet>/` avec son dossier `images/` : double-clique dessus dans le Finder.
+- **Coût** : c'est l'étape la plus chère (Jade en opus écrit deux fois un gros fichier, Léa regarde des images). Demande-la une fois la stratégie et l'idée validées.
+- L'aperçu et le navigateur de l'atelier sont isolés : le code d'une présentation ne peut ni lire tes fichiers, ni parler à l'agence, ni charger autre chose que les polices Google.
 
 ## Les protections (toujours actives)
 

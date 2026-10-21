@@ -7,3 +7,6 @@ tests/.captures/
 
 # Copies de travail que Claude Code pourrait créer
 .claude/worktrees/
+
+# Photos de l atelier de rendu
+.claude/rendus/

@@ -32,12 +32,21 @@ process.stdin.on('end', async () => {
   const texte = (t, parent = null) => sortir({ type: 'assistant', parent_tool_use_id: parent, session_id: session, message: { content: [{ type: 'text', text: t }] } });
   const outil = (id, name, input, parent = null) => sortir({ type: 'assistant', parent_tool_use_id: parent, session_id: session, message: { content: [{ type: 'tool_use', id, name, input }] } });
   let final;
-  if (agent !== 'clientele') {
+  if (agent === 'direction-artistique' && entree.includes('Critique du rendu')) {
+    // Léa regarde la planche, puis critique
+    const planche = (entree.match(/planches contact ([^\s,(]+\.png)/) || [])[1];
+    outil('l1', 'Read', { file_path: planche });
+    final = `Le titre de couverture manque de force.\n1. Agrandir le titre de la couverture.\nVerdict : À retravailler`;
+  } else if (agent === 'digital' && entree.includes('Correction de ton rendu')) {
+    const projetC = (entree.match(/projets\/([a-z0-9-]+)\//) || [])[1];
+    outil('j1', 'Read', { file_path: 'planche' });
+    final = `J'ai agrandi le titre.\n<<<FICHIER projets/${projetC}/presentation.html\n<!doctype html><html lang="fr"><head><title>Reco</title></head><body style="margin:0"><h1 style="font-size:120px">La reco Oasis, version 2</h1><img src="images/test.png" alt="test"><script>document.body.dataset.ok = "1"; fetch("/api/etat").catch(() => {});</script></body></html>\nFICHIER>>>\nVerdict : OK`;
+  } else if (agent !== 'clientele') {
     final = `Bonjour Evan, ici ${agent}. Verdict : OK`;
   } else if (entree.includes('SITE')) {
     // Jade rend une présentation HTML directement dans son rapport
     outil('d1', 'Agent', { subagent_type: 'digital', description: 'Mettre la reco en forme', prompt: 'x' });
-    const html = '<!doctype html><html lang="fr"><head><title>Reco</title></head><body><h1>La reco Oasis</h1><script>document.body.dataset.ok = "1"; fetch("/api/etat").catch(() => {});</script></body></html>';
+    const html = '<!doctype html><html lang="fr"><head><title>Reco</title></head><body style="margin:0"><h1>La reco Oasis</h1><img src="images/test.png" alt="test"><img src="https://exemple.invalid/pub.png" alt="pub"><div style="position:absolute;left:1800px;top:40px;white-space:nowrap;font-size:40px">Un titre beaucoup trop long qui déborde</div><script>document.body.dataset.ok = "1"; fetch("/api/etat").catch(() => {});</script></body></html>';
     sortir({ type: 'user', parent_tool_use_id: null, session_id: session, message: { content: [{ type: 'tool_result', tool_use_id: 'd1', content: [{ type: 'text', text: '[Subagent hand-back] The report follows:\n  Voici la présentation.\n  <<<FICHIER projets/' + projet + '/presentation.html\n  ' + html + '\n  FICHIER>>>\n  Verdict : OK\nagentId: d1' }] }] } });
     final = 'Jade a fini la présentation : elle t\'attend au studio.';
   } else if (entree.includes('ACCENTS')) {

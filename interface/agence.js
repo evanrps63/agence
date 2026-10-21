@@ -466,7 +466,7 @@ function ouvrirMessage(m, f) {
       : `<div class="md" data-vue="apercu">${mdSur(m.contenu)}</div>`;
     const w = fenetre({
       cle: m.id, agentId: m.agent === 'digital' ? 'digital' : 'production', titre: m.chemin.split('/').pop(), sous: `${m.agent === 'digital' ? 'Jade · ' : ''}Studio · ${etat}`, importante: attente, largeur: web ? 1040 : 680,
-      html: `<p class="chemin">${esc(m.chemin)}${m.tronque ? ' · trop long, coupé' : ''}${web ? ' · <button class="lien" data-a="grand">Ouvrir en grand ↗</button>' : ''}</p>${attente ? `<div class="onglets"><button class="actif" data-a="onglet" data-v="apercu">Aperçu</button><button data-a="onglet" data-v="modifier">${web ? 'Code' : 'Modifier'}</button></div>` : ''}${vue}${attente ? `<textarea class="edition" data-vue="modifier" hidden>${esc(m.contenu)}</textarea>` : ''}`,
+      html: `<p class="chemin">${esc(m.chemin)}${m.tronque ? ' · trop long, coupé' : ''}${web ? ' · <button class="lien" data-a="grand">Ouvrir en grand ↗</button>' : ''}</p>${web ? resumeAtelier(m.atelier) : ''}${attente ? `<div class="onglets"><button class="actif" data-a="onglet" data-v="apercu">Aperçu</button><button data-a="onglet" data-v="modifier">${web ? 'Code' : 'Modifier'}</button></div>` : ''}${vue}${attente ? `<textarea class="edition" data-vue="modifier" hidden>${esc(m.contenu)}</textarea>` : ''}`,
       bas: attente ? `<span class="aide">Rien n'est écrit sans ton clic.</span><button class="bouton refuser" data-a="decider" data-v="refuser" data-id="${esc(m.id)}">Refuser</button><button class="bouton valider" data-a="decider" data-v="valider" data-id="${esc(m.id)}">Valider et enregistrer</button>` : '<button class="bouton" data-a="fermer">Fermer</button>'
     });
     w.dataset.fil = f;
@@ -498,9 +498,37 @@ async function fenetreDossier() {
   const p = E.projets.find(x => x.slug === E.projet);
   fenetre({
     cle: 'dossier:' + E.projet, agentId: 'production', titre: `Dossier : ${p ? p.nom : E.projet}`, sous: `projets/${E.projet}/`,
-    html: p && p.fichiers.length ? `<div class="liste-fichiers">${p.fichiers.map(f => `<button data-a="lire" data-v="${esc(f)}">${esc(f)}</button>`).join('')}</div>` : '<p>Aucun fichier pour l\'instant.</p>',
+    html: (p && p.fichiers.length ? `<div class="liste-fichiers">${p.fichiers.map(f => `<button data-a="lire" data-v="${esc(f)}">${esc(f)}</button>`).join('')}</div>` : '<p>Aucun fichier pour l\'instant.</p>') +
+      `<div class="separateur">Images du projet (photos, maquettes, visuels générés)</div>
+<div class="depot-images" data-zone="images"><p>Glisse tes images ici, ou <button class="lien" data-a="choisir-images">choisis-les</button>. PNG, JPG, WEBP ou GIF, 10 Mo au plus.<br>Jade les utilisera dans les présentations et les sites.</p><input type="file" id="fichiers-images" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></div>
+<div class="galerie">${(p && p.images || []).map(n => `<figure><img src="/api/image?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(n)}&jeton=${JETON}" alt=""><figcaption>${esc(n)}</figcaption></figure>`).join('')}</div>`,
     bas: '<button class="bouton" data-a="fermer">Fermer</button>'
   });
+}
+// Evan ajoute des images au projet : elles vont dans projets/<projet>/images/
+async function envoyerImages(liste) {
+  for (const f of liste) {
+    if (f.size > 10 * 1024 * 1024) { toast(`${f.name} : trop lourde (10 Mo au plus).`); continue; }
+    const donnees = await new Promise((ok, ko) => { const l = new FileReader(); l.onload = () => ok(String(l.result).split(',')[1] || ''); l.onerror = ko; l.readAsDataURL(f); });
+    try { const r = await api('/api/image', { projet: E.projet, nom: f.name, donnees }); toast(`Image ajoutée : ${r.nom}`); }
+    catch (e) { toast(`${f.name} : ${e.message}`); }
+  }
+  const w = document.querySelector(`.fenetre[data-cle="${CSS.escape('dossier:' + E.projet)}"]`);
+  if (w) { fermer(w, true); fenetreDossier(); }
+}
+document.addEventListener('change', ev => { if (ev.target.id === 'fichiers-images' && ev.target.files.length) envoyerImages([...ev.target.files]); });
+document.addEventListener('dragover', ev => { const z = ev.target.closest && ev.target.closest('[data-zone="images"]'); if (z) { ev.preventDefault(); z.classList.add('survol'); } });
+document.addEventListener('dragleave', ev => { const z = ev.target.closest && ev.target.closest('[data-zone="images"]'); if (z) z.classList.remove('survol'); });
+document.addEventListener('drop', ev => { const z = ev.target.closest && ev.target.closest('[data-zone="images"]'); if (z) { ev.preventDefault(); z.classList.remove('survol'); envoyerImages([...ev.dataTransfer.files].filter(f => /^image\//.test(f.type))); } });
+// Ce que l'atelier de rendu a fait avant qu'Evan voie le fichier
+function resumeAtelier(a) {
+  if (!a) return '';
+  if (!a.verifie) return '<p class="atelier alerte">Pas vu au navigateur (Google Chrome introuvable) : vérifie toi-même chaque diapo.</p>';
+  const morceaux = ['Vu au navigateur par le studio'];
+  if (a.critiques) morceaux.push(`critiqué par Léa${a.critiques > 1 ? ` (${a.critiques} fois)` : ''}`);
+  if (a.corrections) morceaux.push(`corrigé par Jade${a.corrections > 1 ? ` (${a.corrections} fois)` : ''}`);
+  const defauts = (a.defauts || []).length ? `<br>À regarder : ${a.defauts.slice(0, 3).map(esc).join(' ; ')}${a.defauts.length > 3 ? '…' : ''}` : '<br>Aucun défaut visible repéré.';
+  return `<p class="atelier${(a.defauts || []).length ? ' alerte' : ''}">${morceaux.join(' · ')}.${defauts}</p>`;
 }
 // L'aperçu d'un fichier HTML passe par une adresse à usage limité, servie isolée par le serveur (jamais avec le jeton)
 async function chargerApercu(w, source) {
@@ -563,6 +591,7 @@ document.addEventListener('click', async ev => {
     case 'poste': menuPoste(v, cible); break;
     case 'ecrire': document.querySelector('.menu-poste')?.remove(); changerFil(v); break;
     case 'ecrire-digital': document.querySelector('.menu-poste')?.remove(); changerFil('digital'); break;
+    case 'choisir-images': document.getElementById('fichiers-images')?.click(); break;
     case 'grand': if (w && w.dataset.adresse) window.open(w.dataset.adresse, '_blank', 'noopener'); break;
     case 'retour': document.querySelector('.menu-poste')?.remove(); changerFil(filAgence()); break;
     case 'fiche': {

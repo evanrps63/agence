@@ -11,7 +11,7 @@ Lu automatiquement par chaque session et chaque agent. **Règles stables uniquem
 - `projets/<nom-du-projet>/` : un dossier par projet. Fichiers habituels : `brief.md`, `insights.md`, `strategie.md`, `reco.md`, et en HTML `presentation.html` ou `site.html`. Le type du projet (cours, perso, client) est dans `projet.json`.
 - `projets/_modeles/` : les trames vides de chaque livrable.
 - `.claude/agents/` : les 9 agents (dont `digital`, Jade, qui produit les présentations et sites en HTML). `docs/equipe.md` : qui fait quoi.
-- `interface/` : la page « les locaux de l'agence ». `scripts/agence.mjs` : le serveur local. `scripts/garde-agents.mjs` : le garde-fou qui limite Claire aux agents de l'équipe.
+- `interface/` : la page « les locaux de l'agence ». `scripts/agence.mjs` : le serveur local. `scripts/garde-agents.mjs` : le garde-fou qui limite Claire aux agents de l'équipe. `scripts/rendu.mjs` : l'atelier de rendu (ouvre les fichiers HTML dans Chrome, photographie, repère les défauts). Photos dans `.claude/rendus/` (hors git). Images des projets dans `projets/<projet>/images/`.
 - `tests/` : les tests (`npm test`).
 
 ## Commandes

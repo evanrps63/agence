@@ -8,7 +8,7 @@
     "agence": "node scripts/agence.mjs",
     "test": "node tests/lancer.mjs"
   },
-  "devDependencies": {
+  "dependencies": {
     "puppeteer-core": "^25.12.0"
   }
 }

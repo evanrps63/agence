@@ -163,25 +163,56 @@ try {
   verifier(tour.some(m => m.de === 'proposition' && m.titre && m.texte.includes('Ma stratégie précieuse')), 'le contenu d\'un fichier refusé n\'est pas perdu');
   verifier(!fs.existsSync(path.join(a.racine, 'evil.md')) && !fs.readdirSync(dossier).some(f => /claude/i.test(f)), 'rien n\'est écrit hors du projet, ni de CLAUDE.md');
 
-  console.log('Studio digital : présentation HTML');
+  console.log('Images du projet');
+  const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const img = await api('/api/image', { projet: 'oasis-ete-2027', nom: 'Test.PNG', donnees: PNG });
+  verifier(img.statut === 200 && img.json.nom === 'test.png' && fs.existsSync(path.join(dossier, 'images', 'test.png')), 'Evan ajoute une image : elle va dans images/');
+  verifier((await api('/api/image', { projet: 'oasis-ete-2027', nom: 'piege.png', donnees: Buffer.from('<script>alert(1)</script>').toString('base64') })).statut === 400, 'un faux fichier image est refusé');
+  verifier((await api('/api/image', { projet: 'oasis-ete-2027', nom: 'page.svg', donnees: PNG })).statut === 400, 'les SVG (qui peuvent contenir du code) sont refusés');
+  verifier((await api('/api/image', { projet: '../x', nom: 'a.png', donnees: PNG })).statut === 400, 'pas d\'image hors d\'un projet');
+  verifier((await api('/api/etat')).json.projets.find(p => p.slug === 'oasis-ete-2027').images.includes('test.png'), 'le projet liste ses images');
+  verifier((await fetch(base + '/api/image?projet=oasis-ete-2027&nom=test.png')).status === 403, 'sans jeton, pas d\'image');
+
+  console.log('Studio digital : présentation HTML, rendu, critique, correction');
   await api('/api/message', { fil, texte: 'SITE' });
-  const s = (await a.auRepos(fil)).fils[fil].messages;
+  const s = (await a.auRepos(fil, 60000)).fils[fil].messages;
   const tourSite = s.slice(s.map(m => m.texte).lastIndexOf('SITE'));
-  const pres = tourSite.find(m => m.de === 'fichier');
-  verifier(pres && pres.chemin === 'projets/oasis-ete-2027/presentation.html' && pres.agent === 'digital', 'la présentation de Jade arrive directement au studio');
+  const appelSite = a.appels().find(j => j.entree.includes('SITE'));
+  verifier(/Images fournies par Evan dans projets\/oasis-ete-2027\/images\/ : test\.png/.test(appelSite.args[appelSite.args.indexOf('--append-system-prompt') + 1]), 'Claire sait quelles images Evan a fournies');
   const rapportJade = tourSite.find(m => m.de === 'proposition' && m.agent === 'digital');
   verifier(rapportJade && rapportJade.texte.includes('Voici la présentation') && !rapportJade.texte.includes('<!doctype'), 'son rapport reste lisible, sans le code');
+  verifier(tourSite.some(m => m.de === 'etape' && /Le studio ouvre presentation\.html dans le navigateur/.test(m.texte)), 'le studio ouvre la présentation dans un vrai navigateur');
+  const photo = tourSite.find(m => m.de === 'etape' && /diapo.*photographiée/.test(m.texte));
+  verifier(photo && /défaut/.test(photo.texte), 'il la photographie et repère des défauts');
+  const rendus = path.join(a.racine, '.claude', 'rendus', 'oasis-ete-2027', 'presentation-v1');
+  verifier(fs.existsSync(path.join(rendus, 'planche-1.png')) && fs.existsSync(path.join(rendus, 'diapo-01.jpg')), 'la planche contact et les photos sont rangées pour les agents');
+  const appelLea = a.appels().find(j => j.args[j.args.indexOf('--agent') + 1] === 'direction-artistique' && j.entree.includes('Critique du rendu'));
+  verifier(appelLea && appelLea.entree.includes('planche-1.png') && /texte qui sort de l'écran/.test(appelLea.entree), 'Léa reçoit les photos et la liste des défauts');
+  verifier(/ressource extérieure bloquée : exemple\.invalid/.test(appelLea.entree), 'une image prise sur internet est bloquée et signalée');
+  verifier(!/image introuvable : images\/test\.png/.test(appelLea.entree), 'l\'image du projet s\'affiche dans le rendu');
+  const critique = tourSite.find(m => m.de === 'proposition' && m.agent === 'direction-artistique');
+  verifier(critique && /Critique du rendu/.test(critique.titre) && /Agrandir le titre/.test(critique.texte), 'la critique de Léa apparaît dans le chat');
+  const appelJade = a.appels().find(j => j.args[j.args.indexOf('--agent') + 1] === 'digital' && j.entree.includes('Correction de ton rendu'));
+  verifier(appelJade && /Agrandir le titre/.test(appelJade.entree) && appelJade.entree.includes('presentation-v1/presentation.html'), 'Jade reçoit son rendu, les défauts et la critique');
+  verifier(fs.existsSync(path.join(a.racine, '.claude', 'rendus', 'oasis-ete-2027', 'presentation-v2', 'planche-1.png')), 'la version corrigée est elle aussi photographiée');
+  const pres = tourSite.find(m => m.de === 'fichier');
+  verifier(pres && pres.chemin === 'projets/oasis-ete-2027/presentation.html' && pres.agent === 'digital' && pres.contenu.includes('version 2'), 'c\'est la version corrigée qui arrive au studio');
+  verifier(pres.atelier && pres.atelier.verifie && pres.atelier.critiques === 1 && pres.atelier.corrections === 1, 'le studio dit ce qui a été vérifié');
+  verifier(tourSite.filter(m => m.de === 'fichier' && m.chemin.endsWith('presentation.html')).length === 1, 'Evan ne voit qu\'une version à valider');
   const ap = await api('/api/apercu', { fil, id: pres.id });
-  verifier(ap.statut === 200 && /^\/apercu\/[0-9a-f]{36}$/.test(ap.json.adresse) && !ap.json.adresse.includes(a.jeton), 'l\'aperçu a sa propre adresse, sans le jeton');
+  verifier(ap.statut === 200 && /^\/apercu\/[0-9a-f]{36}\/$/.test(ap.json.adresse) && !ap.json.adresse.includes(a.jeton), 'l\'aperçu a sa propre adresse, sans le jeton');
   const pageApercu = await fetch(base + ap.json.adresse);
   const csp = pageApercu.headers.get('content-security-policy') || '';
   verifier(pageApercu.status === 200 && (await pageApercu.text()).includes('La reco Oasis'), 'l\'aperçu affiche la présentation');
   verifier(/^sandbox allow-scripts/.test(csp) && !/allow-same-origin/.test(csp) && /connect-src 'none'/.test(csp), 'l\'aperçu est isolé : son code ne peut pas parler à l\'agence');
-  verifier((await fetch(base + '/apercu/' + '0'.repeat(36))).status === 404, 'une adresse d\'aperçu inventée ne donne rien');
+  verifier((await fetch(base + ap.json.adresse + 'images/test.png')).headers.get('content-type') === 'image/png', 'les images du projet sont servies dans l\'aperçu');
+  verifier((await api('/api/etat', undefined, { Origin: 'null' })).statut === 403, 'une page isolée (origine « null ») ne peut pas appeler l\'agence');
+  verifier((await fetch(base + ap.json.adresse + 'images/..%2F..%2Fjournal.jsonl')).status === 404, 'pas de fichier hors du dossier images');
+  verifier((await fetch(base + '/apercu/' + '0'.repeat(36) + '/')).status === 404, 'une adresse d\'aperçu inventée ne donne rien');
   verifier((await fetch(base + '/api/apercu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fil, id: pres.id }) })).status === 403, 'sans jeton, pas d\'aperçu');
-  verifier((await api('/api/fichier', { fil, id: pres.id, decision: 'valider' })).statut === 200 && fs.readFileSync(path.join(dossier, 'presentation.html'), 'utf8').includes('La reco Oasis'), 'Evan valide : presentation.html est écrit dans le projet');
+  verifier((await api('/api/fichier', { fil, id: pres.id, decision: 'valider' })).statut === 200 && fs.readFileSync(path.join(dossier, 'presentation.html'), 'utf8').includes('version 2'), 'Evan valide : presentation.html est écrit dans le projet');
   const ap2 = await api('/api/apercu', { projet: 'oasis-ete-2027', nom: 'presentation.html' });
-  verifier(ap2.statut === 200 && (await (await fetch(base + ap2.json.adresse)).text()).includes('La reco Oasis'), 'le fichier enregistré se revoit en aperçu');
+  verifier(ap2.statut === 200 && (await (await fetch(base + ap2.json.adresse)).text()).includes('version 2'), 'le fichier enregistré se revoit en aperçu');
   verifier((await api('/api/apercu', { projet: 'oasis-ete-2027', nom: '../../journal.jsonl' })).statut === 400, 'pas d\'aperçu hors du projet');
   verifier((await api('/api/etat')).json.projets.find(p => p.slug === 'oasis-ete-2027').fichiers.includes('presentation.html'), 'le dossier du projet liste la présentation');
 
@@ -238,6 +269,18 @@ try {
   verifier(refus.statut === 503 && /claude update/.test(refus.json.erreur), 'aucun agent n\'est lancé, avec la marche à suivre');
   verifier(ancien.appels().length === 0, 'Claude Code n\'a jamais été appelé');
 } catch (e) { verifier(false, 'exception : ' + e.stack); } finally { ancien.arreter(); }
+
+console.log('Sans navigateur sur le Mac');
+const sansChrome = await demarrer({ env: { CHROME_BIN: '/introuvable/chrome' } });
+try {
+  await sansChrome.api('/api/brief', { nom: 'Web', type: 'perso', texte: 'Un site.' });
+  await sansChrome.auRepos('agence:web');
+  await sansChrome.api('/api/message', { fil: 'agence:web', texte: 'SITE' });
+  const ms = (await sansChrome.auRepos('agence:web', 30000)).fils['agence:web'].messages;
+  verifier(ms.some(m => m.alerte && /navigateur introuvable/.test(m.texte)), 'l\'agence dit qu\'elle n\'a pas pu voir le rendu');
+  const f = ms.find(m => m.de === 'fichier' && m.chemin.endsWith('presentation.html'));
+  verifier(f && f.atelier && f.atelier.verifie === false && f.statut === 'attente', 'la présentation arrive quand même au studio, marquée « non vérifiée »');
+} catch (e) { verifier(false, 'exception : ' + e.stack); } finally { sansChrome.arreter(); }
 
 console.log('Garde-fou des appels d\'agents');
 const garde = entree => {
