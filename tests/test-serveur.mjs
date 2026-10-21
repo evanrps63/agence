@@ -82,6 +82,8 @@ try {
   verifier(garde.matcher === 'Agent|Task' && garde.hooks[0].command.includes('garde-agents.mjs') && garde.hooks[0].command.includes('jury'), 'le garde-fou des appels d\'agents est branché');
   const defs = JSON.parse(val('--agents'));
   verifier(Object.keys(defs).length === 8 && !defs.redaction.tools.includes('WebSearch'), 'chaque agent garde ses outils');
+  verifier(val('--model') === 'sonnet' && defs.planning.model === 'opus' && defs.social.model === 'haiku', 'chaque agent travaille avec son modèle (Claire sonnet, Max opus, Sam haiku)');
+  verifier(/Sois économe/.test(val('--append-system-prompt')), 'la consigne d\'économie est transmise');
   verifier(/projet de COURS/.test(val('--append-system-prompt')), 'la règle des projets de cours est transmise');
   verifier(/premier plan/.test(val('--append-system-prompt')), 'Claire attend le rapport de chaque agent');
 

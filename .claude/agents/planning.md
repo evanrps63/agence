@@ -2,6 +2,7 @@
 name: planning
 description: Max, planneur stratégique, le rôle central de l'agence. Problématique, insight consommateur, tension, cible, positionnement, territoire et plateforme de marque, stratégie de communication, brief créatif. À appeler après la reformulation du brief et les insights, avant toute créa.
 tools: Read, Grep, Glob, WebSearch, WebFetch
+model: opus
 prenom: Max
 poste: Planneur stratégique
 piece: planning

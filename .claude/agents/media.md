@@ -2,6 +2,7 @@
 name: media
 description: Nora, média planneuse. Dispositif de communication, mix paid / owned / earned, phasage, répartition du budget, KPI et mesure. À appeler après l'idée créative, avec Sam, pour bâtir le dispositif.
 tools: Read, Grep, Glob, WebSearch, WebFetch
+model: haiku
 prenom: Nora
 poste: Média planneuse
 piece: openspace

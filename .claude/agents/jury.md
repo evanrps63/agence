@@ -2,6 +2,7 @@
 name: jury
 description: Le Jury. Relit chaque livrable comme un professeur avant qu'il sorte de l'agence - cohérence du brief à la reco, sources, méthode, orthographe, et notation selon la grille du prof si Evan l'a fournie. À appeler avant tout livrable final.
 tools: Read, Grep, Glob, WebSearch, WebFetch
+model: sonnet
 prenom: Le Jury
 poste: Relecture et notation
 piece: brief

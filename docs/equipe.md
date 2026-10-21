@@ -21,6 +21,18 @@ Inès, Max, Sam, Nora et le Jury peuvent chercher sur le web (en lecture seule).
 
 Chaque agent finit par un verdict : **OK**, **À retravailler** ou **Décision d'Evan**, et dit qui doit intervenir ensuite.
 
+## Le modèle de chaque agent (pour économiser tes crédits)
+
+| Modèle | Pour qui | Pourquoi |
+|---|---|---|
+| **Opus** (le plus réfléchi, le plus cher) | Max | La stratégie est le cœur de la reco : c'est là que la réflexion compte le plus. |
+| **Sonnet** (équilibré) | Claire, Inès, Hugo, Léa, le Jury | Bon niveau pour piloter, chercher des sources, écrire et relire. |
+| **Haiku** (rapide, le moins cher) | Sam, Nora | Déclinaisons plus cadrées : plateformes, calendrier, mix média. |
+
+Pour changer : la ligne `model:` (haiku, sonnet ou opus) dans `.claude/agents/<agent>.md`, puis relance l'agence. Pour tout faire tourner sur un seul modèle (par exemple pour des essais pas chers) : `AGENCE_MODELE=haiku npm run agence`.
+
+Tous les agents ont aussi une consigne d'économie : aller droit au but, lire seulement les fichiers utiles, 5 recherches web au plus par demande. Claire n'appelle que les agents utiles et leur passe un résumé plutôt que tout l'historique.
+
 ## Le circuit d'une recommandation
 
 ```
