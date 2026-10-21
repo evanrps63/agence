@@ -27,13 +27,14 @@ try {
   });
   await page.setViewport({ width: 1440, height: 900 });
   await page.goto(a.adresse);
-  await page.waitForSelector('.poste');
+  await page.waitForSelector('.locaux [data-agent]');
   const capture = nom => page.screenshot({ path: path.join(CAPTURES, nom + '.png') });
 
   console.log('Les locaux');
-  verifier(await page.$$eval('.poste', l => l.length) === 9, '8 agents et le studio ont leur bureau');
-  verifier(await page.$$eval('.piece', l => l.map(p => p.dataset.piece).join()) === 'planning,crea,openspace,brief,studio', 'les 5 pièces de l\'agence');
-  verifier(await page.$eval('.piece[data-piece="planning"]', p => p.textContent.includes('Max')), 'Max est au bureau du planning');
+  verifier(await page.$$eval('.locaux [data-agent]', l => new Set(l.map(x => x.dataset.agent)).size) === 9, '8 agents et le studio ont leur bureau');
+  const enseignes = await page.$eval('.locaux', l => l.textContent);
+  verifier(['BUREAU DU PLANNING', 'SALLE DE CRÉA', 'OPEN SPACE', 'SALLE DU BRIEF', 'STUDIO'].every(n => enseignes.includes(n)), 'les 5 pièces de l\'agence');
+  verifier(await page.$eval('.locaux [data-agent="planning"]', p => p.textContent.includes('Max')), 'Max est à son poste, avec son prénom');
   verifier(await page.$$eval('#circuit li', l => l.length) === 8, 'le circuit a 8 étapes');
   verifier(await page.$eval('#fil', f => f.textContent.includes('Bonjour patron')), 'accueil vide honnête');
   await capture('1-accueil-clair');
@@ -64,7 +65,7 @@ try {
   verifier(titres.includes('À toi de décider'), 'le choix s\'ouvre dans une fenêtre');
   verifier(titres.includes('insights.md'), 'le fichier à valider s\'ouvre dans une fenêtre');
   verifier(titres.includes('brief-reformule.md'), 'un fichier proposé avant l\'appel d\'un agent s\'ouvre aussi');
-  verifier(await page.$eval('.poste[data-v="production"] .badge', b => b.textContent) === '2', 'le studio affiche 2 fichiers à valider');
+  verifier(await page.$eval('.locaux [data-agent="production"]', b => b.dataset.attente === '2' && b.textContent.includes('2 fichiers à valider')), 'le studio annonce 2 fichiers à valider');
   await capture('4-fenetres');
 
   console.log('Sécurité de l\'affichage');
@@ -107,18 +108,19 @@ try {
   await page.waitForFunction(() => !document.querySelector('[data-a="decider"]'), { timeout: 5000 });
   verifier(fs.existsSync(path.join(a.racine, 'projets', 'oasis-ete-2027', 'insights.md')), 'insights.md est écrit après le clic');
   await attendre(200);
-  verifier(!(await page.$('.poste[data-v="production"] .badge')), 'plus rien à valider au studio');
+  verifier(await page.$eval('.locaux [data-agent="production"]', b => b.dataset.attente === '0' && !b.classList.contains('actif')), 'plus rien à valider au studio');
   verifier(await page.$eval('#fil', f => f.textContent.includes('Enregistré')), 'le chat montre le fichier enregistré');
 
   console.log('Choisir');
   await devant('À toi de décider');
-  const options = await page.$$('.option');
-  verifier(options.length === 2 && await page.$eval('.option .conseil', c => !!c), 'deux options, la recommandée est marquée');
+  const options = await page.$$('.fenetre .option');
+  verifier(options.length === 2 && await page.$eval('.fenetre .option .conseil', c => !!c), 'deux options, la recommandée est marquée');
+  verifier(await page.$$eval('#fil .decision .option', l => l.length) === 2, 'les options sont aussi cliquables dans le chat');
   await page.type('.precision', 'surtout en BTS');
-  await page.click('.option[data-v="1"]');
+  await page.click('.fenetre .option[data-v="1"]');
   await page.waitForFunction(() => [...document.querySelectorAll('.fenetre .titre-fenetre strong')].some(s => s.textContent === 'reco.md'), { timeout: 15000 });
   verifier(await page.$eval('#fil', f => f.textContent.includes('Je choisis : Les étudiants')), 'ton choix apparaît dans le chat');
-  verifier(await page.$eval('#fil', f => f.textContent.includes('Choisi : Les étudiants')), 'la carte du choix est marquée');
+  verifier(await page.$eval('#fil .decision .option.choisie', o => o.textContent.includes('Les étudiants')), 'la carte du choix est marquée');
   await page.click('[data-a="onglet"][data-v="modifier"]');
   await page.$eval('.edition', t => { t.value = '# Recommandation\n\nVersion corrigée par Evan.'; });
   await page.click('[data-a="decider"][data-v="valider"]');
@@ -127,7 +129,7 @@ try {
 
   console.log('Écrire à un agent depuis son bureau');
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
-  await page.click('.poste[data-v="jury"]');
+  await page.click('.locaux [data-agent="jury"] .court .pastille');
   await page.waitForSelector('.menu-poste');
   await page.click('.menu-poste [data-a="ecrire"]');
   verifier(await page.$eval('#destinataire', d => d.textContent.includes('Le Jury')), 'le chat passe en message direct au Jury');
@@ -148,7 +150,7 @@ try {
   await page.keyboard.press('Escape');
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
   await attendre(200);
-  verifier(await page.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(22, 20, 18)', 'le thème sombre s\'applique');
+  verifier(await page.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(18, 17, 28)', 'le thème sombre s\'applique');
   await capture('6-sombre');
   await page.setViewport({ width: 390, height: 844 });
   await attendre(200);

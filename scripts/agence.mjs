@@ -215,6 +215,8 @@ function depasserChoix(fil) {
 }
 
 // ---------- Lecture des réponses ----------
+// « à Inès », mais « au Jury »
+const aQui = prenom => /^Le /.test(prenom) ? 'au ' + prenom.slice(3) : 'à ' + prenom;
 function nomAgent(id) { return DEFS[id] ? DEFS[id].prenom : 'Claire'; }
 function decrireOutil(nom, e = {}) {
   const court = s => String(s || '').replace(/\s+/g, ' ').slice(0, 60);
@@ -359,7 +361,7 @@ function lancer(fil, texte, visible = texte) {
             const cible = AGENTS.includes(b.input && b.input.subagent_type) ? b.input.subagent_type : null;
             etat.appels.set(b.id, { agent: cible });
             if (cible) {
-              etape(cible, `${nomAgent(qui)} passe le dossier à ${nomAgent(cible)} : ${String(b.input.description || '').slice(0, 80)}`);
+              etape(cible, `${nomAgent(qui)} passe le dossier ${aQui(nomAgent(cible))} : ${String(b.input.description || '').slice(0, 80)}`);
               diffuser({ type: 'actif', fil, agent: cible, actif: true });
             }
           } else if (qui) etape(qui, `${nomAgent(qui)} ${decrireOutil(b.name, b.input)}`);

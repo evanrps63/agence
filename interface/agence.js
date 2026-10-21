@@ -116,95 +116,109 @@ function md(source, profondeur = 0) {
 function mdSur(t) { try { return md(t); } catch (e) { console.error(e); return `<pre>${esc(t)}</pre>`; } }
 const apercu = t => String(t || '').replace(/[#*`>|_]/g, '').replace(/\s+/g, ' ').trim().slice(0, 180);
 
-// ---------- Avatars ----------
-const PEAUX = ['#f1c7a5', '#c58c63', '#8d5a3b', '#e8b48f', '#6b4029', '#f5d0b5', '#d9a27a', '#ecc19c'];
-const CHEVEUX = ['#2b1d14', '#6b3e1f', '#121212', '#b0702d', '#3b2a20', '#c9a25e', '#1f1a17', '#5a3825'];
-function avatar(id) {
-  const a = agent(id);
-  const c = esc(a.couleur);
-  if (id === 'production') {
-    return `<svg class="avatar" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" fill="${c}"/><rect x="11" y="12" width="26" height="18" rx="2" fill="#fff"/><rect x="14" y="16" width="20" height="2" rx="1" fill="${c}"/><rect x="14" y="20" width="14" height="2" rx="1" fill="${c}"/><rect x="14" y="24" width="17" height="2" rx="1" fill="${c}"/><rect x="21" y="30" width="6" height="5" fill="#fff"/><rect x="15" y="35" width="18" height="2.5" rx="1" fill="#fff"/></svg>`;
-  }
-  const i = Math.max(0, E.equipe.findIndex(e => e.id === id));
-  const peau = PEAUX[i % 8];
-  const ch = id === 'jury' ? '#a8a29e' : CHEVEUX[i % 8];
-  const style = id === 'jury' ? 0 : i % 4;
-  const arriere = style === 1 ? `<path d="M13 22c0-8 5-12 11-12s11 4 11 12v12h-22z" fill="${ch}"/>`
-    : style === 2 ? `<circle cx="24" cy="9.5" r="4.2" fill="${ch}"/>`
-    : style === 3 ? `<g fill="${ch}"><circle cx="16" cy="15" r="4"/><circle cx="21" cy="11.5" r="4.2"/><circle cx="27" cy="11.5" r="4.2"/><circle cx="32" cy="15" r="4"/></g>` : '';
-  const devant = style === 3 ? '' : `<path d="M14.5 21.5c0-7 4.3-11 9.5-11s9.5 4 9.5 11c-2-3.2-5.3-5-9.5-5s-7.5 1.8-9.5 5z" fill="${ch}"/>`;
-  const lunettes = id === 'jury' ? '<g fill="none" stroke="#1c1917" stroke-width="1.1"><circle cx="20.5" cy="22.5" r="2.7"/><circle cx="27.5" cy="22.5" r="2.7"/><path d="M23.2 22.5h1.6"/></g>' : '';
-  return `<svg class="avatar" viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="r-${esc(id)}"><circle cx="24" cy="24" r="23"/></clipPath></defs>
-<g clip-path="url(#r-${esc(id)})"><rect width="48" height="48" fill="${c}" fill-opacity=".18"/>${arriere}
-<path d="M8 50c1-9 7-14 16-14s15 5 16 14z" fill="${c}"/><rect x="21" y="28" width="6" height="8" fill="${peau}"/>
-<ellipse cx="24" cy="22" rx="9" ry="10" fill="${peau}"/>${devant}
-<circle cx="20.5" cy="22.5" r="1.1" fill="#1c1917"/><circle cx="27.5" cy="22.5" r="1.1" fill="#1c1917"/>${lunettes}
-<path d="M21 27q3 2 6 0" stroke="#1c1917" stroke-width="1.1" fill="none" stroke-linecap="round"/></g></svg>`;
+// ---------- Avatars (dessinés dans la page : symboles #av-<agent>) ----------
+function avatar(id, taille = 36) {
+  return `<svg class="avatar" width="${taille}" height="${taille}" aria-hidden="true"><use href="#av-${esc(id)}"/></svg>`;
 }
 
-// ---------- Les locaux ----------
+// ---------- Les locaux (décor isométrique, une personne = [data-agent]) ----------
 function enAttente() {
   return messages(filAgence()).filter(m => m.de === 'fichier' && m.statut === 'attente').length;
 }
-function rendreLocaux() {
-  const occupants = {};
-  for (const a of [...E.equipe, PRODUCTION]) (occupants[a.piece] ||= []).push(a);
-  for (const piece of document.querySelectorAll('.piece')) {
-    const liste = occupants[piece.dataset.piece] || [];
-    piece.querySelector('.bureaux').innerHTML = liste.map(a => {
-      const badge = a.id === 'production' && enAttente() ? `<span class="badge" title="Fichiers à valider">${enAttente()}</span>` : '';
-      return `<button class="poste${estActif(a.id) ? ' actif' : ''}" data-a="poste" data-v="${esc(a.id)}" style="--couleur:${esc(a.couleur)}" aria-label="${esc(a.prenom)}, ${esc(a.poste)}">
-${avatar(a.id)}<span class="table"></span><span class="nom">${esc(a.prenom)}</span><span class="role">${esc(a.poste)}</span>${badge}</button>`;
-    }).join('');
+function poste(id) { return document.querySelector(`.locaux [data-agent="${CSS.escape(id)}"]`); }
+// Ajuste les pastilles et les bulles à la largeur de leur texte
+function ajusterEtiquette(e) {
+  for (const g of e.querySelectorAll('.court, .long')) {
+    const cache = getComputedStyle(g).display === 'none';
+    if (cache) g.style.display = 'inline';
+    const pr = g.querySelector('.prenom'), ro = g.querySelector('.role'), fond = g.querySelector('.pastille'), puce = g.querySelector('.puce');
+    if (pr && fond) {
+      const l = Math.max(pr.getComputedTextLength(), ro ? ro.getComputedTextLength() : 0);
+      const total = Math.ceil(l + (ro ? 30 : 27)), x0 = -total / 2, dx = ro ? 10.5 : 10;
+      fond.setAttribute('x', x0); fond.setAttribute('width', total);
+      if (puce) { if (puce.tagName === 'circle') puce.setAttribute('cx', x0 + dx); else puce.setAttribute('x', x0 + dx - 3.5); }
+      pr.setAttribute('x', x0 + dx + 8.5); if (ro) ro.setAttribute('x', x0 + dx + 8.5);
+    }
+    if (cache) g.style.display = '';
   }
+  const b = e.querySelector('.bulle-texte');
+  if (b) {
+    const loupe = e.querySelector('.loupe');
+    const lb = b.getComputedTextLength(), pad = loupe ? 30 : 14, wb = Math.ceil(lb + pad + 14), xb = -wb / 2;
+    const r = e.querySelector('.bulle-fond');
+    if (r) { r.setAttribute('x', xb); r.setAttribute('width', wb); }
+    b.setAttribute('x', xb + pad);
+    if (loupe) loupe.setAttribute('transform', `translate(${xb + 15},-51.5)`);
+  }
+}
+function rendreLocaux() {
+  for (const p of document.querySelectorAll('.locaux [data-agent]')) {
+    const a = agent(p.dataset.agent);
+    p.setAttribute('aria-label', `${a.prenom}, ${a.poste}. Clique pour lui écrire.`);
+    const pr = p.querySelector('.court .prenom');
+    if (pr && p.dataset.agent !== 'production') pr.textContent = a.prenom;
+    const e = p.querySelector('.etiquette');
+    if (e) ajusterEtiquette(e);
+  }
+  majPostes();
 }
 function estActif(id) {
   for (const s of E.actifs.values()) if (s.has(id)) return true;
   if (id === E.pilote && [...E.enCours].some(estAgence)) return true;
-  if (id === 'production' && enAttente()) return false;
+  if (id === 'production') return enAttente() > 0;
   return E.enCours.has(id);
 }
 function majPostes() {
-  for (const b of document.querySelectorAll('.poste')) b.classList.toggle('actif', estActif(b.dataset.v));
-  const studio = document.querySelector('.poste[data-v="production"]');
-  if (studio) {
-    const n = enAttente();
-    let badge = studio.querySelector('.badge');
-    if (n && !badge) { badge = document.createElement('span'); badge.className = 'badge'; studio.appendChild(badge); }
-    if (badge) { if (n) badge.textContent = n; else badge.remove(); }
+  for (const p of document.querySelectorAll('.locaux [data-agent]')) {
+    const id = p.dataset.agent;
+    // Pendant la démo du circuit, c'est elle qui allume les bureaux
+    if (!E.demo) p.classList.toggle('actif', estActif(id));
+    if (id === 'production') {
+      const n = enAttente();
+      p.dataset.attente = n;
+      if (n) texteBulle(p, n === 1 ? '1 fichier à valider' : `${n} fichiers à valider`);
+    }
   }
 }
-function poste(id) { return document.querySelector(`.poste[data-v="${CSS.escape(id)}"]`); }
+function texteBulle(p, texte) {
+  const b = p.querySelector('.bulle-texte');
+  if (!b) return;
+  const court = texte.length > 46 ? texte.slice(0, 44) + '…' : texte;
+  b.textContent = court;
+  ajusterEtiquette(p.querySelector('.etiquette'));
+}
+// Une phrase qui s'affiche quelques secondes au-dessus de la personne
 function bulle(id, texte) {
   const p = poste(id);
   if (!p) return;
-  p.querySelector('.bulle')?.remove();
-  const b = document.createElement('span');
-  b.className = 'bulle';
-  b.textContent = texte.length > 90 ? texte.slice(0, 88) + '…' : texte;
-  p.appendChild(b);
-  // Toujours dans l'écran, même pour un bureau au bord
-  const r = b.getBoundingClientRect();
-  if (r.left < 8) b.style.marginLeft = (8 - r.left) + 'px';
-  else if (r.right > innerWidth - 8) b.style.marginLeft = (innerWidth - 8 - r.right) + 'px';
-  setTimeout(() => b.remove(), 5000);
+  texteBulle(p, texte);
+  p.classList.add('parle');
+  clearTimeout(p._bulle);
+  p._bulle = setTimeout(() => p.classList.remove('parle'), 5000);
 }
+// Le dossier jaune vole jusqu'au bureau de la personne
 function envolerDossier(id) {
-  const p = poste(id), d = $('#dossier-vol'), im = $('#immeuble');
-  if (!p) return;
-  const r = p.getBoundingClientRect(), ri = im.getBoundingClientRect();
-  d.style.transform = `translate(${r.left - ri.left + r.width / 2 + 18}px, ${r.top - ri.top + 30}px)`;
+  const p = poste(id), d = $('#dossier-vol');
+  if (!p || !d) return;
+  const t = (p.querySelector('.etiquette')?.getAttribute('transform') || '').match(/translate\(([-\d.]+),\s*([-\d.]+)\)/);
+  if (!t) return;
+  d.style.transform = `translate(${Number(t[1]) + 26}px, ${Number(t[2]) + 52}px)`;
   d.classList.add('visible');
 }
 function etapeDe(id) { return CIRCUIT.findIndex(e => e.agents.includes(id)); }
+const TUILE = '<svg class="tuile" viewBox="0 0 52 34" width="52" height="34" aria-hidden="true"><polygon class="t-g" points="2,13 26,26 26,33 2,20"/><polygon class="t-d" points="26,26 50,13 50,20 26,33"/><polygon class="t-h" points="26,0 50,13 26,26 2,13"/></svg>';
+const COCHE = '<svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M2.5,6.5 L5,9 L9.5,3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function rendreCircuit() {
-  $('#circuit').innerHTML = CIRCUIT.map((e, i) => `<li data-i="${i}">${esc(e.nom)}</li>`).join('');
+  $('#circuit').innerHTML = CIRCUIT.map((e, i) => `<li data-i="${i}"><span class="pied">${TUILE}<b>${i + 1}</b></span><span class="etape-nom">${esc(e.nom)}</span><span class="qui">${(e.agents.length ? e.agents : ['clientele']).map(a => avatar(a, 18)).join('')}</span></li>`).join('');
 }
 function marquerCircuit(encours, faits = []) {
   for (const li of document.querySelectorAll('#circuit li')) {
     const i = Number(li.dataset.i);
+    const fait = faits.includes(i) && !encours.includes(i);
     li.classList.toggle('encours', encours.includes(i));
-    li.classList.toggle('fait', faits.includes(i) && !encours.includes(i));
+    li.classList.toggle('fait', fait);
+    li.querySelector('b').innerHTML = fait ? COCHE : String(i + 1);
+    if (encours.includes(i)) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
   }
 }
 function majCircuitDirect() {
@@ -220,20 +234,21 @@ function majCircuitDirect() {
   if (enMarche && !encours.length) encours.push(1);
   marquerCircuit(encours, [...vus]);
   $('#legende').textContent = enMarche
-    ? (encours.length ? CIRCUIT[encours[encours.length - 1]].texte : 'L\'agence travaille.')
-    : 'Clique sur un bureau pour écrire à son agent.';
+    ? (encours.length ? `Étape ${encours[encours.length - 1] + 1} sur 8 · ${CIRCUIT[encours[encours.length - 1]].texte}` : 'L\'agence travaille.')
+    : 'Clique sur une personne pour lui écrire.';
 }
 async function jouerCircuit() {
   if (E.demo) return;
   E.demo = true;
+  for (const p of document.querySelectorAll('.locaux [data-agent]')) p.classList.remove('actif');
   const faits = [];
   for (let i = 0; i < CIRCUIT.length; i++) {
     const e = CIRCUIT[i];
     marquerCircuit([i], faits);
-    $('#legende').textContent = `${i + 1}. ${e.nom} : ${e.texte}`;
+    $('#legende').textContent = `Étape ${i + 1} sur 8 · ${e.texte}`;
     const qui = e.agents.length ? e.agents : ['clientele'];
     envolerDossier(qui[0]);
-    for (const id of qui) { poste(id)?.classList.add('actif'); bulle(id, e.texte); }
+    for (const id of qui) { poste(id)?.classList.add('actif'); bulle(id, e.nom); }
     await new Promise(r => setTimeout(r, 2300));
     for (const id of qui) poste(id)?.classList.remove('actif');
     faits.push(i);
@@ -252,39 +267,55 @@ function rendreTete() {
   const f = E.fil;
   if (estAgence(f)) {
     const p = E.projets.find(x => x.slug === E.projet);
-    $('#destinataire').innerHTML = `<span class="logo" aria-hidden="true">A</span><div><strong>L'agence</strong><span>${p ? esc(p.nom) + ' · ' + esc(p.type) : 'Sans projet'} · Claire pilote, tu décides</span></div>`;
+    const pile = ['clientele', 'etudes', 'planning', 'redaction', 'direction-artistique'].map(a => avatar(a, 26)).join('');
+    $('#destinataire').innerHTML = `<div class="pile">${pile}<span class="plus">+3</span></div><div class="titre"><strong>L'agence</strong><span>${p ? esc(p.nom) + ' · ' + esc(p.type) : 'Sans projet'} · Claire pilote, tu décides</span></div>`;
     $('#texte').placeholder = 'Écris à l\'agence… (Maj + Entrée : nouvelle ligne)';
   } else {
     const a = agent(f);
-    $('#destinataire').innerHTML = `<button class="retour" data-a="retour">← L'agence</button>${avatar(f)}<div><strong>${esc(a.prenom)}</strong><span>${esc(a.poste)} · message direct, en lecture seule</span></div>`;
+    $('#destinataire').innerHTML = `<button class="retour" data-a="retour">← L'agence</button>${avatar(f, 32)}<div class="titre"><strong>${esc(a.prenom)}</strong><span>${esc(a.poste)} · message direct, en lecture seule</span></div>`;
     $('#texte').placeholder = `Écris à ${a.prenom}…`;
   }
 }
 function rendreMessage(m, f) {
   try { return rendreMessageBrut(m, f); }
-  catch (e) { console.error(e); return `<div class="etape alerte"><span class="pastille"></span>Message illisible : ${esc(String(m && (m.texte || m.question || m.chemin) || '').slice(0, 200))}</div>`; }
+  catch (e) { console.error(e); return `<div class="ligne-action alerte"><p>Message illisible : ${esc(String(m && (m.texte || m.question || m.chemin) || '').slice(0, 200))}</p></div>`; }
 }
+const heure = t => t ? new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+const LOUPE = '<svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M13,13 L17.5,17.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+const MINI_DOSSIER = '<svg class="mini-dossier" viewBox="0 0 20 16" width="18" height="14" aria-hidden="true"><path d="M1,3 h6 l2,2 h10 v10 h-18 z" fill="#f6c344"/><path d="M1,6 h18 v9 h-18 z" fill="#e2a92a"/></svg>';
 function rendreMessageBrut(m, f) {
   const a = agent(m.agent);
-  const style = `style="--couleur:${esc(a.couleur)}"`;
   switch (m.de) {
-    case 'evan': return `<div class="msg evan">${esc(m.texte)}</div>`;
-    case 'etape': return `<div class="etape${m.alerte ? ' alerte' : ''}" ${style}><span class="pastille"></span>${esc(m.texte)}</div>`;
+    case 'evan': {
+      const [tete, ...reste] = String(m.texte).split('\n');
+      return `<div class="msg-evan"><p class="${reste.length ? 'fort' : ''}">${esc(tete)}</p>${reste.length ? `<p>${esc(reste.join('\n').trim())}</p>` : ''}<span class="heure">Toi · ${heure(m.t)}</span></div>`;
+    }
+    case 'etape': {
+      if (m.alerte) return `<div class="ligne-action alerte"><span class="icone-action">!</span><p>${esc(m.texte)}</p></div>`;
+      const passe = m.texte.match(/^(.+?) passe le dossier (à|au) (.+?)( : .*)?$/);
+      if (passe) return `<div class="ligne-etape"><span class="passe">${avatar(E.pilote, 24)}${MINI_DOSSIER}${avatar(m.agent, 24)}</span><p><b>${esc(passe[1])}</b> passe le dossier ${passe[2]} <b>${esc(passe[3])}</b>${esc(passe[4] || '')}</p></div>`;
+      const prenom = a.prenom;
+      const suite = m.texte.startsWith(prenom) ? m.texte.slice(prenom.length) : ' ' + m.texte;
+      const icone = /web|consulte/.test(m.texte) ? `<span class="icone-action">${LOUPE}</span>` : avatar(m.agent, 24);
+      return `<div class="ligne-action">${icone}<p><b>${esc(m.texte.startsWith(prenom) ? prenom : '')}</b>${esc(m.texte.startsWith(prenom) ? suite : m.texte)}</p></div>`;
+    }
     case 'agent': {
-      const pied = m.cout ? `<div class="pied">${Math.round((m.duree || 0) / 1000)} s · ${m.cout.toFixed(2)} $</div>` : '';
-      return `<div class="msg agent${m.erreur ? ' erreur' : ''}${estAgence(f) ? '' : ' direct'}">${avatar(m.agent || f)}<div class="corps"><div class="qui">${esc(agent(m.agent || f).prenom)}</div><div class="md">${md(m.texte)}</div>${pied}</div></div>`;
+      const pied = m.cout ? `<div class="pied-msg">${heure(m.t)} · ${Math.round((m.duree || 0) / 1000)} s · ${m.cout.toFixed(2)} $</div>` : '';
+      const qui = m.agent || f;
+      return `<div class="msg-agent${m.erreur ? ' erreur' : ''}">${avatar(qui, 32)}<div class="bulle-agent"><div class="qui-parle">${esc(agent(qui).prenom)}</div><div class="md">${md(m.texte)}</div>${pied}</div></div>`;
     }
     case 'proposition':
-      return `<div class="carte" ${style} data-a="ouvrir" data-v="${esc(m.id)}" role="button" tabindex="0">${avatar(m.agent)}<div class="infos"><div class="titre">${esc(m.titre || 'Proposition de ' + a.prenom)}</div><div class="apercu">${esc(apercu(m.texte))}</div></div><span class="etiquette">Ouvrir</span></div>`;
+      return `<article class="carte proposition" style="--accent:${esc(a.couleur)}" data-a="ouvrir" data-v="${esc(m.id)}" tabindex="0">${avatar(m.agent)}<div class="carte-corps"><span class="sur-titre">${esc(m.titre || 'Proposition de ' + a.prenom)}</span><p>${esc(apercu(m.texte))}</p><span class="meta">${esc(a.poste)}</span></div><span class="bouton petit">Ouvrir</span></article>`;
     case 'choix': {
       const fait = m.reponse !== null && m.reponse !== undefined;
-      const etiquette = fait ? `<span class="etiquette valide">Choisi : ${esc(m.options[m.reponse].titre)}</span>`
-        : m.depasse ? '<span class="etiquette">Dépassé</span>' : '<span class="etiquette attente">À toi de choisir</span>';
-      return `<div class="carte" ${style} data-a="ouvrir" data-v="${esc(m.id)}" role="button" tabindex="0">${avatar(m.agent)}<div class="infos"><div class="titre">Décision : ${esc(m.question)}</div><div class="apercu">${m.options.map(o => esc(o.titre)).join(' · ')}</div></div>${etiquette}</div>`;
+      const ferme = fait || m.depasse;
+      const etat = fait ? '<span class="etat valide">Choisi</span>' : m.depasse ? '<span class="etat">Dépassé</span>' : '<span class="badge">À toi de choisir</span>';
+      const options = m.options.map((o, i) => `<button class="option${fait && m.reponse === i ? ' choisie' : ''}" type="button" data-a="choisir" data-v="${i}" data-id="${esc(m.id)}" ${ferme ? 'disabled' : ''}><span class="rond"></span><span><b>${esc(o.titre)}</b>${o.detail ? `<small>${esc(o.detail.length > 90 ? o.detail.slice(0, 88) + '…' : o.detail)}</small>` : ''}</span>${o.conseil ? '<span class="conseil">Conseillé</span>' : ''}</button>`).join('');
+      return `<article class="carte decision" style="--accent:${esc(a.couleur)}" data-fil="${esc(f)}"><header data-a="ouvrir" data-v="${esc(m.id)}">${avatar(m.agent)}<div><span class="sur-titre">Décision : ${esc(m.question)}</span><span class="qui-demande">${ferme ? (fait ? 'Tu as tranché' : 'La conversation a continué depuis') : `${esc(a.prenom)} attend ta réponse`}</span></div>${etat}</header><div class="options">${options}</div></article>`;
     }
     case 'fichier': {
-      const etiquettes = { attente: '<span class="etiquette attente">À valider</span>', valide: '<span class="etiquette valide">Enregistré</span>', refuse: '<span class="etiquette refuse">Refusé</span>', remplace: '<span class="etiquette">Remplacé</span>' };
-      return `<div class="carte" style="--couleur:${PRODUCTION.couleur}" data-a="ouvrir" data-v="${esc(m.id)}" role="button" tabindex="0">${avatar('production')}<div class="infos"><div class="titre">Fichier : ${esc(m.chemin.split('/').pop())}</div><div class="apercu">${esc(apercu(m.contenu))}</div></div>${etiquettes[m.statut] || ''}</div>`;
+      const etats = { attente: '<span class="etat attente">À valider</span>', valide: '<span class="etat valide">Enregistré</span>', refuse: '<span class="etat refuse">Refusé</span>', remplace: '<span class="etat">Remplacé</span>' };
+      return `<article class="carte proposition" style="--accent:${PRODUCTION.couleur}" data-a="ouvrir" data-v="${esc(m.id)}" tabindex="0">${avatar('production')}<div class="carte-corps"><span class="sur-titre">Fichier : ${esc(m.chemin.split('/').pop())}</span><p>${esc(apercu(m.contenu))}</p><span class="meta">Studio · ${esc(m.chemin)}</span></div>${etats[m.statut] || ''}</article>`;
     }
   }
   return '';
@@ -294,7 +325,7 @@ function rendreFil() {
   const bas = zone.scrollHeight - zone.scrollTop - zone.clientHeight < 80;
   const liste = messages(f);
   let html = liste.map(m => rendreMessage(m, f)).join('');
-  if (E.live[f]) html += `<div class="msg agent en-direct">${avatar(estAgence(f) ? E.pilote : f)}<div class="corps"><div class="md">${mdSur(E.live[f])}</div></div></div>`;
+  if (E.live[f]) html += `<div class="msg-agent en-direct">${avatar(estAgence(f) ? E.pilote : f, 32)}<div class="bulle-agent"><div class="md">${mdSur(E.live[f])}</div></div></div>`;
   if (!liste.length && !E.live[f]) html = vide();
   zone.innerHTML = html;
   if (bas || !liste.length) zone.scrollTop = zone.scrollHeight;
@@ -305,7 +336,7 @@ function rendreFil() {
 function vide() {
   if (!estAgence(E.fil)) {
     const a = agent(E.fil);
-    return `<div class="vide">${avatar(E.fil).replace('class="avatar"', 'class="avatar" style="width:64px;height:64px"')}<h2>${esc(a.prenom)}</h2><p>${esc(a.description)}</p></div>`;
+    return `<div class="vide">${avatar(E.fil, 64)}<h2>${esc(a.prenom)}</h2><p>${esc(a.description)}</p></div>`;
   }
   if (!E.projet) return `<div class="vide"><h2>Bonjour patron.</h2><p>Donne un brief à l'agence : Claire le reformule, l'équipe s'y met, et chaque décision te revient.</p><button class="bouton principal" data-a="nouveau-brief">Nouveau brief</button></div>`;
   return '<div class="vide"><h2>Le projet est ouvert.</h2><p>Écris à l\'agence pour lancer l\'étape suivante.</p></div>';
@@ -355,7 +386,7 @@ function fenetre({ cle, agentId, titre, sous, html, bas = '', importante = false
   w.setAttribute('aria-label', titre);
   if (a) w.style.setProperty('--couleur', a.couleur);
   if (largeur) w.style.width = `min(${largeur}px, calc(100vw - 32px))`;
-  const tete = a ? avatar(agentId) : '<span class="logo" aria-hidden="true">A</span>';
+  const tete = a ? avatar(agentId, 34) : '<svg class="logo" viewBox="0 0 30 30" width="30" height="30" aria-hidden="true"><polygon points="15,2 27,9 15,16 3,9" fill="#b9a6f2"/><polygon points="3,9 15,16 15,29 3,22" fill="#f6a57d"/><polygon points="15,16 27,9 27,22 15,29" fill="#3b3486"/></svg>';
   w.innerHTML = `<div class="titre-fenetre">${tete}<div class="infos"><strong>${esc(titre)}</strong>${sous ? `<span>${esc(sous)}</span>` : ''}</div><button class="fermer" data-a="fermer" aria-label="Fermer">×</button></div><div class="contenu">${html}</div>${bas ? `<div class="bas">${bas}</div>` : ''}`;
   $('#fenetres').appendChild(w);
   const lw = w.offsetWidth, lh = w.offsetHeight;
@@ -419,7 +450,7 @@ function ouvrirMessage(m, f) {
   } else if (m.de === 'choix') {
     const fait = m.reponse !== null && m.reponse !== undefined;
     const ferme = fait || m.depasse;
-    const options = m.options.map((o, i) => `<button class="option${fait && m.reponse === i ? ' choisie' : ''}" data-a="choisir" data-v="${i}" data-id="${esc(m.id)}" ${ferme ? 'disabled' : ''}>${o.conseil ? '<span class="conseil">Conseillé</span>' : ''}<strong>${esc(o.titre)}</strong><span>${esc(o.detail)}</span></button>`).join('');
+    const options = m.options.map((o, i) => `<button class="option${fait && m.reponse === i ? ' choisie' : ''}" data-a="choisir" data-v="${i}" data-id="${esc(m.id)}" ${ferme ? 'disabled' : ''}><span class="rond"></span><span><b>${esc(o.titre)}</b>${o.detail ? `<small>${esc(o.detail)}</small>` : ''}</span>${o.conseil ? '<span class="conseil">Conseillé</span>' : ''}</button>`).join('');
     fenetre({
       cle: m.id, agentId: m.agent, titre: fait ? 'Décision prise' : m.depasse ? 'Décision dépassée' : 'À toi de décider',
       sous: m.depasse && !fait ? 'La conversation a continué depuis' : `${a.prenom} attend ta réponse`, importante: !ferme, largeur: 600,
@@ -452,7 +483,7 @@ function fenetreBrief() {
 <label class="champ"><span>Le brief</span><textarea name="texte" maxlength="30000" placeholder="Colle le brief : la demande, le livrable, la date de rendu, les consignes et la grille du prof si tu les as." required></textarea></label>
 </form>
 <div class="separateur">Juste une petite demande ? Va directement au bon bureau</div>
-<div class="orienter">${ORIENTER.map(([id, t]) => `<button data-a="orienter" data-v="${id}">${avatar(id)}<span><strong>${esc(agent(id).prenom)}</strong><br>${esc(t)}</span></button>`).join('')}</div>`,
+<div class="orienter">${ORIENTER.map(([id, t]) => `<button data-a="orienter" data-v="${id}">${avatar(id, 30)}<span><strong>${esc(agent(id).prenom)}</strong><br>${esc(t)}</span></button>`).join('')}</div>`,
     bas: '<button class="bouton" data-a="fermer">Annuler</button><button class="bouton principal" data-a="envoyer-brief">Donner le brief à Claire</button>'
   });
   setTimeout(() => document.querySelector('#form-brief [name=nom]')?.focus(), 50);
@@ -480,18 +511,20 @@ function menuPoste(id, bouton) {
   const lignes = id === 'production'
     ? [['fichiers-attente', `Fichiers à valider (${enAttente()})`], ['dossier', 'Dossier du projet']]
     : [['ecrire', `Écrire à ${a.prenom}`], ['fiche', 'Ce que fait ' + a.prenom], ...(id === E.pilote ? [['retour', 'Chat de l\'agence (Claire pilote)']] : [])];
-  m.innerHTML = `<div class="entete"><strong>${esc(a.prenom)}</strong><span>${esc(a.poste)}</span></div>` + lignes.map(([act, t]) => `<button data-a="${act}" data-v="${esc(id)}">${esc(t)}</button>`).join('');
+  m.innerHTML = `<div class="entete">${avatar(id, 34)}<div><strong>${esc(a.prenom)}</strong><span>${esc(a.poste)}</span></div></div>` + lignes.map(([act, t]) => `<button data-a="${act}" data-v="${esc(id)}">${esc(t)}</button>`).join('');
   document.body.appendChild(m);
-  const r = bouton.getBoundingClientRect();
-  m.style.left = Math.min(innerWidth - m.offsetWidth - 8, r.left) + 'px';
-  m.style.top = Math.min(innerHeight - m.offsetHeight - 8, r.bottom + 4) + 'px';
+  const r = (bouton.querySelector('.etiquette') || bouton).getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.left + r.width / 2 - m.offsetWidth / 2)) + 'px';
+  m.style.top = Math.max(8, Math.min(innerHeight - m.offsetHeight - 8, r.bottom + 6)) + 'px';
   m.style.zIndex = ++rang + 100;
 }
 
 // ---------- Les clics ----------
 document.addEventListener('click', async ev => {
   const cible = ev.target.closest('[data-a]');
-  if (!ev.target.closest('.menu-poste') && !ev.target.closest('[data-a="poste"]')) document.querySelector('.menu-poste')?.remove();
+  if (!ev.target.closest('.menu-poste') && !ev.target.closest('.locaux [data-agent]')) document.querySelector('.menu-poste')?.remove();
+  const perso = ev.target.closest('.locaux [data-agent]');
+  if (perso) { menuPoste(perso.dataset.agent, perso); return; }
   if (!cible) return;
   const act = cible.dataset.a, v = cible.dataset.v;
   const w = cible.closest('.fenetre');
@@ -537,11 +570,15 @@ document.addEventListener('click', async ev => {
       if (v === 'apercu') w.querySelector('.md[data-vue]').innerHTML = md(w.querySelector('.edition').value);
       break;
     case 'choisir': {
-      const precision = w.querySelector('.precision')?.value || '';
-      for (const b of w.querySelectorAll('.option')) b.disabled = true;
+      const boite = cible.closest('.fenetre, .decision');
+      const precision = boite.querySelector('.precision')?.value || '';
+      for (const b of boite.querySelectorAll('.option')) b.disabled = true;
       cible.classList.add('choisie');
-      try { await api('/api/choisir', { fil: w.dataset.fil, id: cible.dataset.id, option: Number(v), precision }); setTimeout(() => fermer(w, true), 600); }
-      catch (e) { toast(e.message); for (const b of w.querySelectorAll('.option')) b.disabled = false; cible.classList.remove('choisie'); }
+      try {
+        await api('/api/choisir', { fil: boite.dataset.fil, id: cible.dataset.id, option: Number(v), precision });
+        const fen = document.querySelector(`.fenetre[data-cle="${CSS.escape(cible.dataset.id)}"]`);
+        if (fen) setTimeout(() => fermer(fen, true), 600);
+      } catch (e) { toast(e.message); for (const b of boite.querySelectorAll('.option')) b.disabled = false; cible.classList.remove('choisie'); }
       break;
     }
     case 'decider': {
@@ -594,7 +631,10 @@ document.addEventListener('keydown', ev => {
     const ws = [...document.querySelectorAll('.fenetre')].sort((a, b) => b.style.zIndex - a.style.zIndex);
     if (ws[0]) { ev.preventDefault(); fermer(ws[0]); }
   }
-  if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.classList?.contains('carte')) { ev.preventDefault(); ev.target.click(); }
+  if ((ev.key === 'Enter' || ev.key === ' ') && (ev.target.classList?.contains('carte') || ev.target.matches?.('.locaux [data-agent]'))) {
+    ev.preventDefault();
+    if (ev.target.matches('.locaux [data-agent]')) menuPoste(ev.target.dataset.agent, ev.target); else ev.target.click();
+  }
 });
 $('#saisie').addEventListener('submit', ev => { ev.preventDefault(); envoyer($('#texte').value); });
 $('#texte').addEventListener('keydown', ev => {
@@ -626,7 +666,8 @@ function recevoir(evt) {
       if (m.de === 'agent') delete E.live[f];
       if (m.de === 'etape' && m.agent && !m.alerte) {
         const prenom = agent(m.agent).prenom;
-        bulle(m.agent, m.texte.startsWith(prenom) ? m.texte.slice(prenom.length).replace(/^\s*:?\s*/, '') : m.texte);
+        bulle(m.agent, / passe le dossier /.test(m.texte) ? 'reçoit le dossier'
+          : m.texte.startsWith(prenom) ? m.texte.slice(prenom.length).replace(/^\s*:?\s*/, '') : m.texte);
       }
       if (m.de === 'fichier') bulle('production', 'Un fichier t\'attend : ' + m.chemin.split('/').pop());
       if (f === E.fil && ['proposition', 'choix', 'fichier'].includes(m.de)) ouvrirMessage(m, f);
