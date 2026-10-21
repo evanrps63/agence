@@ -8,9 +8,9 @@ Lu automatiquement par chaque session et chaque agent. **Règles stables uniquem
 - L'agence l'aide sur tous ses projets : cours, dossiers, projets perso, futurs clients.
 
 ## Où est quoi
-- `projets/<nom-du-projet>/` : un dossier par projet. Fichiers habituels : `brief.md`, `insights.md`, `strategie.md`, `reco.md`. Le type du projet (cours, perso, client) est dans `projet.json`.
+- `projets/<nom-du-projet>/` : un dossier par projet. Fichiers habituels : `brief.md`, `insights.md`, `strategie.md`, `reco.md`, et en HTML `presentation.html` ou `site.html`. Le type du projet (cours, perso, client) est dans `projet.json`.
 - `projets/_modeles/` : les trames vides de chaque livrable.
-- `.claude/agents/` : les 8 agents. `docs/equipe.md` : qui fait quoi.
+- `.claude/agents/` : les 9 agents (dont `digital`, Jade, qui produit les présentations et sites en HTML). `docs/equipe.md` : qui fait quoi.
 - `interface/` : la page « les locaux de l'agence ». `scripts/agence.mjs` : le serveur local. `scripts/garde-agents.mjs` : le garde-fou qui limite Claire aux agents de l'équipe.
 - `tests/` : les tests (`npm test`).
 

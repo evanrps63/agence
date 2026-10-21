@@ -16,13 +16,13 @@ const CIRCUIT = [
   { nom: 'Idée créative', agents: ['redaction', 'direction-artistique'], texte: 'Hugo et Léa trouvent le concept : les mots et l\'image.' },
   { nom: 'Dispositif', agents: ['social', 'media'], texte: 'Sam et Nora bâtissent le dispositif : plateformes, médias, budget, KPI.' },
   { nom: 'Relecture', agents: ['jury'], texte: 'Le Jury relit comme un prof : cohérence, sources, méthode, orthographe.' },
-  { nom: 'Livrable', agents: ['production'], texte: 'Le studio rédige les fichiers. Tu valides chacun avant qu\'il soit écrit.' }
+  { nom: 'Livrable', agents: ['digital'], texte: 'Jade met la reco en forme au studio : présentation ou site en HTML. Tu valides chaque fichier.' }
 ];
 const ORIENTER = [
   ['redaction', 'Une accroche, un slogan'], ['etudes', 'Des chiffres, un benchmark'],
   ['planning', 'Une question de méthode'], ['jury', 'Faire relire un travail'],
   ['social', 'Une idée de post'], ['media', 'Un budget, des KPI'],
-  ['direction-artistique', 'Une piste visuelle'], ['clientele', 'Je ne sais pas à qui demander']
+  ['direction-artistique', 'Une piste visuelle'], ['digital', 'Un site, une présentation'], ['clientele', 'Je ne sais pas à qui demander']
 ];
 
 // ---------- Outils ----------
@@ -118,14 +118,15 @@ const apercu = t => String(t || '').replace(/[#*`>|_]/g, '').replace(/\s+/g, ' '
 
 // ---------- Avatars (dessinés dans la page : symboles #av-<agent>) ----------
 function avatar(id, taille = 36) {
-  return `<svg class="avatar" width="${taille}" height="${taille}" aria-hidden="true"><use href="#av-${esc(id)}"/></svg>`;
+  return `<svg class="avatar" width="${taille}" height="${taille}" aria-hidden="true"><use href="#av-${esc(POSTE[id] || id)}"/></svg>`;
 }
 
 // ---------- Les locaux (décor isométrique, une personne = [data-agent]) ----------
 function enAttente() {
   return messages(filAgence()).filter(m => m.de === 'fichier' && m.statut === 'attente').length;
 }
-function poste(id) { return document.querySelector(`.locaux [data-agent="${CSS.escape(id)}"]`); }
+const POSTE = { digital: 'production' };
+function poste(id) { return document.querySelector(`.locaux [data-agent="${CSS.escape(POSTE[id] || id)}"]`); }
 // Ajuste les pastilles et les bulles à la largeur de leur texte
 function ajusterEtiquette(e) {
   for (const g of e.querySelectorAll('.court, .long')) {
@@ -165,7 +166,7 @@ function rendreLocaux() {
 function estActif(id) {
   for (const s of E.actifs.values()) if (s.has(id)) return true;
   if (id === E.pilote && [...E.enCours].some(estAgence)) return true;
-  if (id === 'production') return enAttente() > 0;
+  if (id === 'production') return enAttente() > 0 || estActif('digital');
   return E.enCours.has(id);
 }
 function majPostes() {
@@ -460,12 +461,16 @@ function ouvrirMessage(m, f) {
   } else if (m.de === 'fichier') {
     const attente = m.statut === 'attente';
     const etat = { attente: m.existe ? 'Remplacera la version actuelle' : 'Nouveau fichier', valide: 'Enregistré', refuse: 'Refusé, rien n\'a été écrit', remplace: 'Remplacé par une version plus récente' }[m.statut];
+    const web = /\.html$/.test(m.chemin);
+    const vue = web ? '<div class="cadre-apercu" data-vue="apercu"><iframe class="apercu" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" title="Aperçu" referrerpolicy="no-referrer"></iframe></div>'
+      : `<div class="md" data-vue="apercu">${mdSur(m.contenu)}</div>`;
     const w = fenetre({
-      cle: m.id, agentId: 'production', titre: m.chemin.split('/').pop(), sous: `Studio · ${etat}`, importante: attente, largeur: 680,
-      html: `<p class="chemin">${esc(m.chemin)}${m.tronque ? ' · trop long, coupé à 200 000 caractères' : ''}</p>${attente ? '<div class="onglets"><button class="actif" data-a="onglet" data-v="apercu">Aperçu</button><button data-a="onglet" data-v="modifier">Modifier</button></div>' : ''}<div class="md" data-vue="apercu">${mdSur(m.contenu)}</div>${attente ? `<textarea class="edition" data-vue="modifier" hidden>${esc(m.contenu)}</textarea>` : ''}`,
+      cle: m.id, agentId: m.agent === 'digital' ? 'digital' : 'production', titre: m.chemin.split('/').pop(), sous: `${m.agent === 'digital' ? 'Jade · ' : ''}Studio · ${etat}`, importante: attente, largeur: web ? 1040 : 680,
+      html: `<p class="chemin">${esc(m.chemin)}${m.tronque ? ' · trop long, coupé' : ''}${web ? ' · <button class="lien" data-a="grand">Ouvrir en grand ↗</button>' : ''}</p>${attente ? `<div class="onglets"><button class="actif" data-a="onglet" data-v="apercu">Aperçu</button><button data-a="onglet" data-v="modifier">${web ? 'Code' : 'Modifier'}</button></div>` : ''}${vue}${attente ? `<textarea class="edition" data-vue="modifier" hidden>${esc(m.contenu)}</textarea>` : ''}`,
       bas: attente ? `<span class="aide">Rien n'est écrit sans ton clic.</span><button class="bouton refuser" data-a="decider" data-v="refuser" data-id="${esc(m.id)}">Refuser</button><button class="bouton valider" data-a="decider" data-v="valider" data-id="${esc(m.id)}">Valider et enregistrer</button>` : '<button class="bouton" data-a="fermer">Fermer</button>'
     });
     w.dataset.fil = f;
+    if (web) chargerApercu(w, { fil: f, id: m.id });
   }
 }
 function ouvrirEnAttente() {
@@ -497,7 +502,22 @@ async function fenetreDossier() {
     bas: '<button class="bouton" data-a="fermer">Fermer</button>'
   });
 }
+// L'aperçu d'un fichier HTML passe par une adresse à usage limité, servie isolée par le serveur (jamais avec le jeton)
+async function chargerApercu(w, source) {
+  try {
+    const { adresse } = await api('/api/apercu', source);
+    w.dataset.adresse = adresse;
+    const f = w.querySelector('iframe.apercu');
+    if (f) f.src = adresse;
+  } catch (e) { toast(e.message); }
+}
 async function lireFichier(nom) {
+  if (/\.html$/.test(nom)) {
+    const w = fenetre({ cle: 'lire:' + E.projet + '/' + nom, agentId: 'digital', titre: nom, sous: `projets/${E.projet}/`, largeur: 1040,
+      html: `<p class="chemin">projets/${esc(E.projet)}/${esc(nom)} · <button class="lien" data-a="grand">Ouvrir en grand ↗</button></p><div class="cadre-apercu"><iframe class="apercu" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" title="Aperçu" referrerpolicy="no-referrer"></iframe></div>`,
+      bas: '<button class="bouton" data-a="fermer">Fermer</button>' });
+    return chargerApercu(w, { projet: E.projet, nom });
+  }
   try {
     const { contenu } = await api(`/api/fichier?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(nom)}`);
     fenetre({ cle: 'lire:' + E.projet + '/' + nom, agentId: 'production', titre: nom, sous: `projets/${E.projet}/`, html: `<div class="md">${md(contenu)}</div>`, bas: '<button class="bouton" data-a="fermer">Fermer</button>', largeur: 680 });
@@ -509,7 +529,7 @@ function menuPoste(id, bouton) {
   const m = document.createElement('div');
   m.className = 'menu-poste';
   const lignes = id === 'production'
-    ? [['fichiers-attente', `Fichiers à valider (${enAttente()})`], ['dossier', 'Dossier du projet']]
+    ? [['ecrire-digital', 'Écrire à Jade (sites, présentations)'], ['fichiers-attente', `Fichiers à valider (${enAttente()})`], ['dossier', 'Dossier du projet']]
     : [['ecrire', `Écrire à ${a.prenom}`], ['fiche', 'Ce que fait ' + a.prenom], ...(id === E.pilote ? [['retour', 'Chat de l\'agence (Claire pilote)']] : [])];
   m.innerHTML = `<div class="entete">${avatar(id, 34)}<div><strong>${esc(a.prenom)}</strong><span>${esc(a.poste)}</span></div></div>` + lignes.map(([act, t]) => `<button data-a="${act}" data-v="${esc(id)}">${esc(t)}</button>`).join('');
   document.body.appendChild(m);
@@ -542,6 +562,8 @@ document.addEventListener('click', async ev => {
     }
     case 'poste': menuPoste(v, cible); break;
     case 'ecrire': document.querySelector('.menu-poste')?.remove(); changerFil(v); break;
+    case 'ecrire-digital': document.querySelector('.menu-poste')?.remove(); changerFil('digital'); break;
+    case 'grand': if (w && w.dataset.adresse) window.open(w.dataset.adresse, '_blank', 'noopener'); break;
     case 'retour': document.querySelector('.menu-poste')?.remove(); changerFil(filAgence()); break;
     case 'fiche': {
       document.querySelector('.menu-poste')?.remove();
@@ -567,7 +589,11 @@ document.addEventListener('click', async ev => {
     case 'onglet':
       for (const b of w.querySelectorAll('.onglets button')) b.classList.toggle('actif', b === cible);
       for (const z of w.querySelectorAll('[data-vue]')) z.hidden = z.dataset.vue !== v;
-      if (v === 'apercu') w.querySelector('.md[data-vue]').innerHTML = md(w.querySelector('.edition').value);
+      if (v === 'apercu') {
+        const ed = w.querySelector('.edition');
+        if (w.querySelector('iframe.apercu')) chargerApercu(w, { fil: w.dataset.fil, id: w.dataset.cle, contenu: ed.value });
+        else w.querySelector('.md[data-vue]').innerHTML = md(ed.value);
+      }
       break;
     case 'choisir': {
       const boite = cible.closest('.fenetre, .decision');

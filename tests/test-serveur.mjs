@@ -38,7 +38,7 @@ try {
 
   console.log('État');
   const etat = (await api('/api/etat')).json;
-  verifier(etat.equipe.length === 8, '8 agents dans l\'équipe');
+  verifier(etat.equipe.length === 9 && etat.equipe.some(e => e.id === 'digital' && e.prenom === 'Jade'), '9 agents dans l\'équipe, dont Jade au studio digital');
   verifier(etat.equipe.find(e => e.id === 'planning').prenom === 'Max', 'le prénom vient de la fiche de l\'agent');
   verifier(etat.pret === true && typeof etat.actifs === 'object', 'Claude Code reconnu, agents actifs donnés au chargement');
 
@@ -81,7 +81,7 @@ try {
   const garde = reglages.hooks.PreToolUse[0];
   verifier(garde.matcher === 'Agent|Task' && garde.hooks[0].command.includes('garde-agents.mjs') && garde.hooks[0].command.includes('jury'), 'le garde-fou des appels d\'agents est branché');
   const defs = JSON.parse(val('--agents'));
-  verifier(Object.keys(defs).length === 8 && !defs.redaction.tools.includes('WebSearch'), 'chaque agent garde ses outils');
+  verifier(Object.keys(defs).length === 9 && defs.digital.model === 'opus' && !defs.redaction.tools.includes('WebSearch'), 'chaque agent garde ses outils');
   verifier(val('--model') === 'sonnet' && defs.planning.model === 'opus' && defs.social.model === 'haiku', 'chaque agent travaille avec son modèle (Claire sonnet, Max opus, Sam haiku)');
   verifier(/Sois économe/.test(val('--append-system-prompt')), 'la consigne d\'économie est transmise');
   verifier(/projet de COURS/.test(val('--append-system-prompt')), 'la règle des projets de cours est transmise');
@@ -132,7 +132,7 @@ try {
   verifier(reco.chemin.endsWith('reco.md'), 'la reco est proposée');
   verifier(apres.some(m => m.alerte && /choix proposé est illisible/.test(m.texte)), 'un choix mal formé est signalé');
   verifier(apres.filter(m => m.de === 'agent').pop().texte.includes('Le "vrai" goût'), 'le choix mal formé reste lisible dans la réponse');
-  const tropLong = await api('/api/fichier', { fil, id: reco.id, decision: 'valider', contenu: 'x'.repeat(210000) });
+  const tropLong = await api('/api/fichier', { fil, id: reco.id, decision: 'valider', contenu: 'x'.repeat(410000) });
   verifier(tropLong.statut === 413 && /trop long/.test(tropLong.json.erreur), 'un fichier modifié trop long : message clair, rien d\'écrit');
 
   console.log('Versions d\'un même fichier');
@@ -162,6 +162,28 @@ try {
   verifier(tour.some(m => m.alerte && /sort du dossier/.test(m.texte)) && tour.some(m => m.alerte && /réservé/.test(m.texte)) && tour.some(m => m.alerte && /minuscules/.test(m.texte)), 'chaque refus dit pourquoi');
   verifier(tour.some(m => m.de === 'proposition' && m.titre && m.texte.includes('Ma stratégie précieuse')), 'le contenu d\'un fichier refusé n\'est pas perdu');
   verifier(!fs.existsSync(path.join(a.racine, 'evil.md')) && !fs.readdirSync(dossier).some(f => /claude/i.test(f)), 'rien n\'est écrit hors du projet, ni de CLAUDE.md');
+
+  console.log('Studio digital : présentation HTML');
+  await api('/api/message', { fil, texte: 'SITE' });
+  const s = (await a.auRepos(fil)).fils[fil].messages;
+  const tourSite = s.slice(s.map(m => m.texte).lastIndexOf('SITE'));
+  const pres = tourSite.find(m => m.de === 'fichier');
+  verifier(pres && pres.chemin === 'projets/oasis-ete-2027/presentation.html' && pres.agent === 'digital', 'la présentation de Jade arrive directement au studio');
+  const rapportJade = tourSite.find(m => m.de === 'proposition' && m.agent === 'digital');
+  verifier(rapportJade && rapportJade.texte.includes('Voici la présentation') && !rapportJade.texte.includes('<!doctype'), 'son rapport reste lisible, sans le code');
+  const ap = await api('/api/apercu', { fil, id: pres.id });
+  verifier(ap.statut === 200 && /^\/apercu\/[0-9a-f]{36}$/.test(ap.json.adresse) && !ap.json.adresse.includes(a.jeton), 'l\'aperçu a sa propre adresse, sans le jeton');
+  const pageApercu = await fetch(base + ap.json.adresse);
+  const csp = pageApercu.headers.get('content-security-policy') || '';
+  verifier(pageApercu.status === 200 && (await pageApercu.text()).includes('La reco Oasis'), 'l\'aperçu affiche la présentation');
+  verifier(/^sandbox allow-scripts/.test(csp) && !/allow-same-origin/.test(csp) && /connect-src 'none'/.test(csp), 'l\'aperçu est isolé : son code ne peut pas parler à l\'agence');
+  verifier((await fetch(base + '/apercu/' + '0'.repeat(36))).status === 404, 'une adresse d\'aperçu inventée ne donne rien');
+  verifier((await fetch(base + '/api/apercu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fil, id: pres.id }) })).status === 403, 'sans jeton, pas d\'aperçu');
+  verifier((await api('/api/fichier', { fil, id: pres.id, decision: 'valider' })).statut === 200 && fs.readFileSync(path.join(dossier, 'presentation.html'), 'utf8').includes('La reco Oasis'), 'Evan valide : presentation.html est écrit dans le projet');
+  const ap2 = await api('/api/apercu', { projet: 'oasis-ete-2027', nom: 'presentation.html' });
+  verifier(ap2.statut === 200 && (await (await fetch(base + ap2.json.adresse)).text()).includes('La reco Oasis'), 'le fichier enregistré se revoit en aperçu');
+  verifier((await api('/api/apercu', { projet: 'oasis-ete-2027', nom: '../../journal.jsonl' })).statut === 400, 'pas d\'aperçu hors du projet');
+  verifier((await api('/api/etat')).json.projets.find(p => p.slug === 'oasis-ete-2027').fichiers.includes('presentation.html'), 'le dossier du projet liste la présentation');
 
   console.log('Accents dans une très longue réponse');
   await api('/api/message', { fil, texte: 'ACCENTS' });

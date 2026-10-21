@@ -14,6 +14,7 @@ Une agence de communication qui tourne sur ton Mac. Tu es le patron : tu donnes 
 | **Léa** · `direction-artistique` | Directrice artistique | Pistes visuelles, moodboards décrits, codes de marque | Salle de créa |
 | **Sam** · `social` | Social media et influence | Plateformes, lignes éditoriales, influence, calendrier éditorial | Open space |
 | **Nora** · `media` | Média planneuse | Dispositif, mix paid / owned / earned, budget, KPI | Open space |
+| **Jade** · `digital` | Studio créa digital | Met la reco en forme : présentation HTML plein écran ou site internet, au niveau des grandes agences. Tu la vois en aperçu au studio avant de valider | Studio |
 | **Le Jury** · `jury` | Relecture et notation | Relit comme un prof : cohérence, sources, méthode, orthographe, grille de notation | Salle du brief |
 | **Le studio** | Poste de production | Montre chaque fichier proposé. Tu valides ou tu refuses ; rien n'est écrit sans ton clic | Studio |
 
@@ -25,7 +26,7 @@ Chaque agent finit par un verdict : **OK**, **À retravailler** ou **Décision d
 
 | Modèle | Pour qui | Pourquoi |
 |---|---|---|
-| **Opus** (le plus réfléchi, le plus cher) | Max | La stratégie est le cœur de la reco : c'est là que la réflexion compte le plus. |
+| **Opus** (le plus réfléchi, le plus cher) | Max, Jade | La stratégie est le cœur de la reco : c'est là que la réflexion compte le plus. |
 | **Sonnet** (équilibré) | Claire, Inès, Hugo, Léa, le Jury | Bon niveau pour piloter, chercher des sources, écrire et relire. |
 | **Haiku** (rapide, le moins cher) | Sam, Nora | Déclinaisons plus cadrées : plateformes, calendrier, mix média. |
 
@@ -43,7 +44,8 @@ Toi : « Nouveau brief »
   → Hugo + Léa : 3 pistes créatives                       → tu choisis la piste
   → Sam + Nora : dispositif social et médias, budget, KPI
   → le Jury : relecture comme un prof, note estimée
-  → le studio : brief.md, insights.md, strategie.md, reco.md → tu valides chaque fichier
+  → Jade : présentation.html ou site.html (aperçu en direct au studio)
+  → le studio : brief.md, insights.md, strategie.md, reco.md, presentation.html → tu valides chaque fichier
 ```
 
 Pour un projet de **cours**, l'agence t'aide à réfléchir : elle explique, challenge, structure et relit. Les fichiers sont des fiches de travail. La version rendue au prof, c'est toi qui l'écris.
@@ -58,13 +60,22 @@ Pour un projet de **cours**, l'agence t'aide à réfléchir : elle explique, cha
 6. **Une petite demande** : clique sur un bureau, puis « Écrire à… ». Ou passe par l'accueil du « Nouveau brief », qui t'oriente vers le bon agent.
 7. **Envoyer sur GitHub** : seulement quand tu cliques, et seulement le dossier du projet ouvert.
 
+## Les sites et présentations (Jade)
+
+- Demande-la dans le chat : « Jade, fais la présentation de la reco » ou « fais une landing page pour la campagne ». Ou clique sur le studio, puis « Écrire à Jade ».
+- Le fichier HTML s'ouvre au studio avec un **aperçu en vrai** (la présentation se joue dedans : flèches du clavier pour avancer). « Ouvrir en grand » l'affiche dans un onglet, F pour le plein écran. L'onglet « Code » permet de retoucher avant de valider.
+- Une fois validé, le fichier est dans `projets/<projet>/` : double-clique dessus dans le Finder pour l'ouvrir dans ton navigateur, même sans l'agence.
+- Pas de photos : Jade compose avec la typographie, la couleur et des illustrations dessinées. Là où une photo s'impose, elle laisse un cadre décrit, à remplacer par tes images.
+- C'est l'agent le plus cher (opus, et un gros fichier) : demande-le une fois la stratégie et l'idée validées.
+- L'aperçu est isolé : le code d'une présentation ne peut ni lire tes fichiers, ni parler à l'agence.
+
 ## Les protections (toujours actives)
 
 - La page ne répond **que sur ton Mac** (127.0.0.1) et demande un **jeton secret**, nouveau à chaque lancement, caché dans l'adresse ouverte par `npm run agence`.
 - Les agents sont **en lecture seule** : pas de commande, pas d'écriture. Ils ne lisent que le dossier de l'agence, sauf les conversations (`.claude/agence/`) et le dossier git (`.git/`). Ils proposent ; le serveur écrit **seulement dans `projets/<projet>/`**, en `.md`, après ton clic.
 - Un fichier proposé ailleurs (autre projet, `../`, sous-dossier, nom réservé comme `CLAUDE.md`) est refusé et signalé en rouge dans le chat ; son contenu reste lisible dans une proposition.
 - Une proposition plus ancienne d'un même fichier ne peut pas écraser la nouvelle, ni un fichier que tu as modifié à la main depuis.
-- Claire ne peut appeler que les 7 agents de l'équipe (garde-fou `scripts/garde-agents.mjs`).
+- Claire ne peut appeler que les 8 agents de l'équipe (garde-fou `scripts/garde-agents.mjs`).
 - Si Claude Code est trop ancien (sans le mode restreint), l'agence refuse de lancer les agents et te dit de taper `claude update`.
 - **Rien ne part sur GitHub** sans ton clic sur « Envoyer sur GitHub », et seulement des livrables du dossier `projets/` : si du code de l'agence attend d'être envoyé, l'envoi est refusé avec une explication.
 - Fermer la fenêtre du Terminal arrête aussi les agents en cours (pas de crédits consommés dans le vide).

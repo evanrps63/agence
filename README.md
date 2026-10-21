@@ -1,6 +1,6 @@
 # L'Agence
 
-L'agence de communication interne d'Evan : 8 agents Claude Code (clientèle, planning stratégique, études, rédaction, direction artistique, social, média, jury) qui travaillent comme les équipes d'une vraie agence, en local sur le Mac.
+L'agence de communication interne d'Evan : 9 agents Claude Code (clientèle, planning stratégique, études, rédaction, direction artistique, social, média, studio digital, jury) qui travaillent comme les équipes d'une vraie agence, en local sur le Mac.
 
 - Lancer : `npm run agence` (la page des locaux s'ouvre toute seule).
 - Tests : `npm test`.

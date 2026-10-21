@@ -49,7 +49,7 @@ try {
   console.log('Nouveau brief');
   await page.click('.barre [data-a="nouveau-brief"]');
   await page.waitForSelector('#form-brief');
-  verifier(await page.$$eval('.orienter button', l => l.length) === 8, 'l\'accueil propose d\'aller au bon bureau');
+  verifier(await page.$$eval('.orienter button', l => l.length) === 9, 'l\'accueil propose d\'aller au bon bureau');
   await attendre(400);
   await capture('3-nouveau-brief');
   await page.type('#form-brief [name=nom]', 'Oasis été 2027');
@@ -141,10 +141,23 @@ try {
   await page.click('[data-a="retour"]');
   verifier(await page.$eval('#destinataire', d => d.textContent.includes('Claire pilote')), 'retour au chat de l\'agence');
 
+  console.log('Studio digital');
+  await page.type('#texte', 'SITE');
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('.fenetre iframe.apercu[src^="/apercu/"]', { timeout: 15000 });
+  await attendre(800);
+  const cadre = page.frames().find(fr => fr.url().includes('/apercu/'));
+  verifier(cadre && await cadre.evaluate(() => document.body.dataset.ok === '1' && document.querySelector('h1').textContent === 'La reco Oasis'), 'la présentation de Jade s\'affiche en vrai dans la fenêtre du studio');
+  verifier(!(await page.$eval('.fenetre iframe.apercu', f => f.src)).includes('jeton'), 'l\'aperçu ne connaît pas le jeton');
+  await capture('8-studio-digital');
+  await page.click('.fenetre [data-a="decider"][data-v="valider"]');
+  await attendre(400);
+  for (let i = 0; i < 6; i++) await page.keyboard.press('Escape');
+
   console.log('Dossier du projet');
   await page.click('.barre [data-a="dossier"]');
   await page.waitForSelector('.liste-fichiers');
-  verifier(await page.$$eval('.liste-fichiers button', l => l.map(b => b.textContent).join()) === 'brief.md,insights.md,reco.md', 'le dossier liste les fichiers du projet');
+  verifier(await page.$$eval('.liste-fichiers button', l => l.map(b => b.textContent).join()) === 'brief.md,insights.md,presentation.html,reco.md', 'le dossier liste les fichiers du projet');
 
   console.log('Sombre et téléphone');
   await page.keyboard.press('Escape');
@@ -163,7 +176,10 @@ try {
   const p2 = await nav.newPage();
   await p2.goto(a.base + '/');
   verifier(await p2.$eval('body', b => b.textContent.includes('L\'agence est fermée')), 'sans le jeton, la page explique comment ouvrir l\'agence');
-  verifier(erreursConsole.length === 0, 'aucune erreur dans la console' + (erreursConsole.length ? ' : ' + erreursConsole.join(' | ') : ''));
+  // L'aperçu de la présentation a tenté d'appeler l'agence : l'isolement doit l'avoir bloqué
+  verifier(erreursConsole.some(e => /connect-src 'none'/.test(e) && /api\/etat/.test(e)), 'le code d\'une présentation ne peut pas appeler l\'agence (bloqué)');
+  const autres = erreursConsole.filter(e => !/connect-src 'none'|violates the document's Content Security Policy/.test(e));
+  verifier(autres.length === 0, 'aucune autre erreur dans la console' + (autres.length ? ' : ' + autres.join(' | ') : ''));
 } catch (e) {
   verifier(false, 'exception : ' + e.stack);
 } finally {

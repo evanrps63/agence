@@ -470,3 +470,8 @@ button, select, textarea { font: inherit; color: inherit; }
 /* Dans le décor, seules les personnes réagissent au clic (le mobilier dessiné par-dessus ne les cache pas) */
 .scene { pointer-events: none; }
 .scene [data-agent] { pointer-events: auto; }
+
+/* ---------- aperçu des sites et présentations ---------- */
+.cadre-apercu { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; border: 1px solid var(--trait); background: #fff; box-shadow: 0 3px 0 var(--relief); }
+.cadre-apercu iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.lien { border: none; background: none; padding: 0; color: var(--primaire); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }

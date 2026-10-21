@@ -28,7 +28,7 @@ const MODELES = ['haiku', 'sonnet', 'opus'];
 const OUTILS_PERMIS = ['Read', 'Grep', 'Glob', 'WebSearch', 'WebFetch'];
 // Interdits même en lecture : les conversations et le dossier git (adresse du dépôt, historique)
 const INTERDITS = ['Bash', 'Edit', 'Write', 'NotebookEdit', 'PowerShell', 'Read(./.claude/agence/**)', 'Read(./.git/**)'];
-const MAX_FICHIER = 200000;   // caractères d'un livrable
+const MAX_FICHIER = 400000;   // caractères d'un livrable (un site ou une présentation HTML peut être long)
 const MAX_REPONSE = 100000;   // caractères d'une réponse affichée
 const MAX_ETAPES = 300;       // lignes d'étape gardées par fil (les autres messages ne sont jamais effacés)
 
@@ -50,7 +50,7 @@ CHOIX>>>
 # Titre
 contenu complet en Markdown
 FICHIER>>>
-Seulement dans le dossier du projet en cours, pas de sous-dossier, des fichiers .md au nom court en minuscules sans accent (brief.md, insights.md, strategie.md, reco.md…). Un fichier qui existe déjà est remplacé : reprends tout son contenu.
+Seulement dans le dossier du projet en cours, pas de sous-dossier, des fichiers .md ou .html au nom court en minuscules sans accent (brief.md, insights.md, strategie.md, reco.md, presentation.html, site.html…). Un fichier qui existe déjà est remplacé : reprends tout son contenu.
 Ne mets jamais ces blocs dans des guillemets de code.`;
 
 function consignePilote(projet) {
@@ -67,6 +67,8 @@ Le circuit d'une recommandation : brief → reformulation (toi) → insights (et
 - Tu peux appeler deux agents indépendants en même temps (redaction et direction-artistique, social et media).
 - Appelle toujours les agents au premier plan (jamais run_in_background, jamais d'isolation) et attends leur rapport avant de répondre à Evan.
 - Avant un livrable final, fais toujours passer le jury.
+- Pour un site internet, une page web ou une présentation, appelle digital (Jade) une fois la stratégie et l'idée créative validées, en lui donnant les fichiers du projet à lire. Ses fichiers .html arrivent tout seuls au studio : ne les recopie jamais.
+- Un agent peut proposer lui-même un fichier avec un bloc FICHIER : il arrive directement au studio, ne le recopie pas.
 - Sois économe : n'appelle que les agents utiles à la demande, donne-leur un contexte court (le brief résumé, les décisions d'Evan, les fichiers à lire) plutôt que tout l'historique, et ne refais pas un travail déjà validé.`;
   if (info) {
     texte += `
@@ -117,7 +119,7 @@ const TROP_ANCIEN = "Claude Code est absent ou trop ancien pour l'agence : tape 
 
 // ---------- Projets ----------
 const SLUG = /^[a-z0-9][a-z0-9-]{0,59}$/;
-const NOM_FICHIER = /^[a-z0-9][a-z0-9_-]{0,59}\.md$/;
+const NOM_FICHIER = /^[a-z0-9][a-z0-9_-]{0,59}\.(md|html)$/;
 const RESERVES = /^(claude|claude\.local|agents?|readme)\.md$/i;
 const TYPES = ['cours', 'perso', 'client'];
 function slugifier(s) {
@@ -147,12 +149,12 @@ function listerProjets() {
 function cheminPermis(chemin, projet) {
   const c = String(chemin || '').trim();
   if (!projet) return { erreur: "aucun projet n'est ouvert" };
-  const m = c.match(/^projets\/([a-z0-9][a-z0-9-]{0,59})\/([a-z0-9][a-z0-9_-]{0,59}\.md)$/);
+  const m = c.match(/^projets\/([a-z0-9][a-z0-9-]{0,59})\/([a-z0-9][a-z0-9_-]{0,59}\.(?:md|html))$/);
   if (!m) {
     if (c.includes('..')) return { erreur: 'le chemin sort du dossier du projet' };
     if (/^projets\/[^/]+\/[^/]+\/./.test(c)) return { erreur: 'les sous-dossiers ne sont pas permis' };
     if (!c.startsWith(`projets/${projet}/`)) return { erreur: "ce n'est pas le dossier du projet ouvert" };
-    return { erreur: 'le nom doit être court, en minuscules, sans accent ni espace, et finir par .md (par exemple strategie.md)' };
+    return { erreur: 'le nom doit être court, en minuscules, sans accent ni espace, et finir par .md ou .html (par exemple strategie.md, presentation.html)' };
   }
   if (m[1] !== projet) return { erreur: "ce n'est pas le dossier du projet ouvert" };
   if (RESERVES.test(m[2])) return { erreur: 'ce nom est réservé aux outils (choisis par exemple notes.md)' };
@@ -341,7 +343,10 @@ function lancer(fil, texte, visible = texte) {
   const fini = (appel, rapport, erreur) => {
     appel.rendu = true;
     diffuser({ type: 'actif', fil, agent: appel.agent, actif: false });
-    if (rapport) ajouter(fil, { de: 'proposition', agent: appel.agent, texte: rapport.slice(0, 60000), erreur });
+    // Les fichiers écrits par l'agent partent directement au studio ; le reste de son rapport devient une proposition
+    const { texte: propre, fichiers } = decouper(rapport || '');
+    if (propre) ajouter(fil, { de: 'proposition', agent: appel.agent, texte: propre.slice(0, 60000), erreur });
+    for (const f of fichiers) proposerFichier(fil, appel.agent, projet, f);
   };
   // Décodage UTF-8 qui recolle les caractères coupés entre deux morceaux
   p.stdout.setEncoding('utf8');
@@ -533,6 +538,19 @@ function jetonValide(j) {
 }
 const STATIQUES = { '/': ['index.html', 'text/html; charset=utf-8'], '/agence.css': ['agence.css', 'text/css; charset=utf-8'], '/agence.js': ['agence.js', 'text/javascript; charset=utf-8'] };
 
+// Aperçus des fichiers HTML : une clé à usage limité par fichier, jamais le jeton.
+// La page est servie isolée (CSP sandbox, origine opaque) : son code ne peut ni appeler l'API, ni lire la page de l'agence.
+const APERCUS = new Map();
+function cleApercu(source) {
+  const cle = crypto.randomBytes(18).toString('hex');
+  APERCUS.set(cle, { ...source, expire: Date.now() + 2 * 3600 * 1000 });
+  if (APERCUS.size > 200) APERCUS.delete(APERCUS.keys().next().value);
+  return cle;
+}
+const ISOLE = {
+  'Content-Security-Policy': "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; default-src 'none'; script-src 'unsafe-inline' https:; style-src 'unsafe-inline' https:; img-src data: blob: https:; font-src data: https:; media-src data: https:; connect-src 'none'; frame-src https:; form-action 'none'; base-uri 'none'",
+  'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Cross-Origin-Resource-Policy': 'same-origin'
+};
 function trouverMessage(fil, id) {
   const c = conversations[fil];
   return c && typeof id === 'string' ? c.messages.find(m => m.id === id) : null;
@@ -555,6 +573,19 @@ async function traiter(req, res) {
     const [f, type] = STATIQUES[url.pathname];
     try { return envoyer(res, 200, fs.readFileSync(path.join(code, 'interface', f)), type); }
     catch { return envoyer(res, 404, { erreur: 'introuvable' }); }
+  }
+  const apercu = url.pathname.match(/^\/apercu\/([0-9a-f]{36})$/);
+  if (req.method === 'GET' && apercu) {
+    const a = APERCUS.get(apercu[1]);
+    if (!a || a.expire < Date.now()) return envoyer(res, 404, { erreur: 'aperçu expiré : rouvre-le depuis l\'agence' });
+    let contenu = a.contenu;
+    if (contenu === undefined) {
+      const d = dossierProjet(a.projet);
+      try { if (!d || fs.lstatSync(path.join(d, a.nom)).isSymbolicLink()) throw 0; contenu = fs.readFileSync(path.join(d, a.nom), 'utf8'); }
+      catch { return envoyer(res, 404, { erreur: 'introuvable' }); }
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...ISOLE });
+    return res.end(contenu);
   }
   if (!url.pathname.startsWith('/api/')) return envoyer(res, 404, { erreur: 'introuvable' });
   if (!jetonValide(req.headers['x-jeton'] || url.searchParams.get('jeton'))) return envoyer(res, 403, { erreur: 'jeton refusé' });
@@ -583,9 +614,19 @@ async function traiter(req, res) {
   }
   if (req.method !== 'POST') return envoyer(res, 405, { erreur: 'méthode refusée' });
   let corps;
-  try { corps = await lireCorps(req, url.pathname === '/api/fichier' ? 1200000 : 200000); }
+  try { corps = await lireCorps(req, ['/api/fichier', '/api/apercu'].includes(url.pathname) ? 1500000 : 200000); }
   catch (e) { return envoyer(res, e.statut || 400, { erreur: e.message }); }
 
+  if (url.pathname === '/api/apercu') {
+    // Un fichier proposé (fil + id) ou un fichier du dossier (projet + nom)
+    if (corps.id !== undefined) {
+      const m = filValide(corps.fil) ? trouverMessage(corps.fil, corps.id) : null;
+      if (!m || m.de !== 'fichier' || !/\.html$/.test(m.chemin)) return envoyer(res, 400, { erreur: 'aperçu impossible' });
+      return envoyer(res, 200, { adresse: '/apercu/' + cleApercu({ contenu: typeof corps.contenu === 'string' && corps.contenu.length <= MAX_FICHIER ? corps.contenu : m.contenu }) });
+    }
+    if (!dossierProjet(corps.projet) || !/^[a-z0-9][a-z0-9_-]{0,59}\.html$/.test(corps.nom || '')) return envoyer(res, 400, { erreur: 'aperçu impossible' });
+    return envoyer(res, 200, { adresse: '/apercu/' + cleApercu({ projet: corps.projet, nom: corps.nom }) });
+  }
   if (url.pathname === '/api/brief') {
     const nom = typeof corps.nom === 'string' ? corps.nom.trim().slice(0, 80) : '';
     const type = TYPES.includes(corps.type) ? corps.type : null;
@@ -655,7 +696,7 @@ async function traiter(req, res) {
       // Le fichier a-t-il changé depuis la proposition (autre validation, modification à la main) ?
       try { if (fs.statSync(ok.cible).mtimeMs > m.t) return envoyer(res, 409, { erreur: "Ce fichier a été modifié depuis cette proposition. Demande une nouvelle version à l'agence pour ne rien écraser." }); } catch {}
       const contenu = typeof corps.contenu === 'string' ? corps.contenu : m.contenu;
-      if (contenu.length > MAX_FICHIER) return envoyer(res, 413, { erreur: 'Fichier trop long (200 000 caractères au plus).' });
+      if (contenu.length > MAX_FICHIER) return envoyer(res, 413, { erreur: 'Fichier trop long (400 000 caractères au plus).' });
       fs.writeFileSync(ok.cible, contenu.endsWith('\n') ? contenu : contenu + '\n');
       m.statut = 'valide';
       m.contenu = contenu;

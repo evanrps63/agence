@@ -34,6 +34,12 @@ process.stdin.on('end', async () => {
   let final;
   if (agent !== 'clientele') {
     final = `Bonjour Evan, ici ${agent}. Verdict : OK`;
+  } else if (entree.includes('SITE')) {
+    // Jade rend une présentation HTML directement dans son rapport
+    outil('d1', 'Agent', { subagent_type: 'digital', description: 'Mettre la reco en forme', prompt: 'x' });
+    const html = '<!doctype html><html lang="fr"><head><title>Reco</title></head><body><h1>La reco Oasis</h1><script>document.body.dataset.ok = "1"; fetch("/api/etat").catch(() => {});</script></body></html>';
+    sortir({ type: 'user', parent_tool_use_id: null, session_id: session, message: { content: [{ type: 'tool_result', tool_use_id: 'd1', content: [{ type: 'text', text: '[Subagent hand-back] The report follows:\n  Voici la présentation.\n  <<<FICHIER projets/' + projet + '/presentation.html\n  ' + html + '\n  FICHIER>>>\n  Verdict : OK\nagentId: d1' }] }] } });
+    final = 'Jade a fini la présentation : elle t\'attend au studio.';
   } else if (entree.includes('ACCENTS')) {
     // Une ligne stream-json de plus de 64 Ko : le tube la coupe en plusieurs morceaux, parfois au milieu d'un caractère
     final = 'Début ' + 'é€à'.repeat(40000) + ' fin';
