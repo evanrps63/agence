@@ -77,6 +77,8 @@ export async function photographier({ code, adresse, dossier, nom }) {
     await page.setRequestInterception(true);
     page.on('request', r => {
       const u = r.url();
+      // L'icône d'onglet que Chrome demande tout seul n'est pas un défaut du fichier
+      if (/\/favicon\.ico$/.test(u)) return r.respond({ status: 204, body: '' });
       if (u.startsWith(adresse.replace(/\/$/, '')) || PERMIS.test(u)) return r.continue();
       try { bloques.add(new URL(u).hostname); } catch {}
       r.abort();
