@@ -326,6 +326,8 @@ const tuerTout = () => { for (const e of enCours.values()) e.tuer(); };
 
 const aRendre = new Map();
 function proposerFichier(fil, agent, projet, f, options = {}) {
+  // Jade livre toujours du HTML : un diapo rangé en .md ne s'afficherait pas en aperçu au studio
+  if (agent === 'digital') f = { ...f, chemin: String(f.chemin).replace(/\.md$/i, '.html') };
   const ok = cheminPermis(f.chemin, projet);
   if (ok.erreur) {
     // Le contenu n'est pas perdu : il reste lisible dans une proposition
@@ -481,6 +483,13 @@ function lancer(fil, texte, visible = texte) {
     const { texte: propre, fichiers } = decouper(rapport || '');
     if (propre) ajouter(fil, { de: 'proposition', agent: appel.agent, texte: propre.slice(0, 60000), erreur });
     for (const f of fichiers) proposerFichier(fil, appel.agent, projet, f);
+    // Jade doit livrer un fichier complet : sinon Evan ne voit jamais de diapo, et ne sait pas pourquoi
+    if (appel.agent === 'digital' && !fichiers.length && projet) {
+      const coupe = /<<<FICHIER/.test(rapport || '');
+      ajouter(fil, { de: 'etape', agent: 'digital', alerte: true, texte: coupe
+        ? "Jade a commencé le fichier mais la réponse s'est arrêtée avant la fin : rien n'est arrivé au studio. Demande-lui de le refaire plus court (une slide à la fois, ou un site plus simple)."
+        : "Jade n'a pas livré de fichier : elle a répondu sans bloc FICHIER. Vérifie que reco.md et strategie.md existent dans le dossier, puis redemande." });
+    }
   };
   // Décodage UTF-8 qui recolle les caractères coupés entre deux morceaux
   p.stdout.setEncoding('utf8');
