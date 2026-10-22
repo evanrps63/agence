@@ -13,6 +13,7 @@ import crypto from 'crypto';
 import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { photographier, trouverChrome } from './rendu.mjs';
+import { avancement, dateRendu } from './suivi.mjs';
 
 const code = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const racine = process.env.AGENCE_RACINE || code;
@@ -75,15 +76,18 @@ Le circuit d'une recommandation : brief → reformulation (toi) → insights (et
 - Après Jade, le studio ouvre tout seul chaque fichier .html dans un navigateur, Léa critique le rendu et Jade corrige avant qu'Evan le voie : n'appelle pas Léa ni le jury pour ça.
 - Pour un site internet, une page web ou une présentation, appelle digital (Jade) une fois la stratégie et l'idée créative validées, en lui donnant les fichiers du projet à lire. Ses fichiers .html arrivent tout seuls au studio : ne les recopie jamais.
 - Un agent peut proposer lui-même un fichier avec un bloc FICHIER : il arrive directement au studio, ne le recopie pas.
-- Sois économe : n'appelle que les agents utiles à la demande, donne-leur un contexte court (le brief résumé, les décisions d'Evan, les fichiers à lire) plutôt que tout l'historique, et ne refais pas un travail déjà validé.`;
+- Sois économe : n'appelle que les agents utiles à la demande, donne-leur un contexte court (le brief résumé, les décisions d'Evan, les fichiers à lire) plutôt que tout l'historique, et ne refais pas un travail déjà validé.
+- Les trames des livrables sont dans projets/_modeles/ : idee-creative.md (Hugo), dispositif-social.md (Sam), dispositif-media.md (Nora), relecture.md (le Jury), fiche-travail-cours.md (cours). Quand un agent écrit un de ces fichiers, il reprend la trame du même nom : mêmes titres de sections, dans le même ordre.
+- Les sources déjà vérifiées sont dans docs/sources.md : Inès part de cette liste avant de chercher sur le web.`;
   if (info) {
     texte += `
 
 ## Le projet en cours
 Nom : ${info.nom}. Type : ${info.type}. Dossier : projets/${projet}/ (fichiers : ${info.fichiers.join(', ') || 'aucun'}).
+Date de rendu : ${info.rendu || 'non indiquée'}. Grille du prof : ${info.consignes ? 'oui, dans consignes-prof.md (le Jury la suit en premier)' : 'non fournie'}.
 Images fournies par Evan dans projets/${projet}/images/ : ${info.images.join(', ') || 'aucune'}. Dis-le à Jade quand tu l'appelles.`;
     if (info.type === 'cours') texte += `
-C'est un projet de COURS : l'agence aide Evan à réfléchir (explique, challenge, structure, propose des pistes, relit). Les fichiers proposés sont des fiches de travail (plan, questions, pistes, relecture) ; la version rendue au prof est écrite par Evan.`;
+C'est un projet de COURS : l'agence aide Evan à réfléchir (explique, challenge, structure, propose des pistes, relit). Les fichiers proposés sont des fiches de travail (plan, questions, pistes, relecture) suivant la trame fiche-travail-cours.md ; la version rendue au prof est écrite par Evan.`;
   } else {
     texte += `
 
@@ -148,7 +152,13 @@ function lireProjet(slug) {
   try { fichiers = fs.readdirSync(d).filter(f => NOM_FICHIER.test(f) && fs.lstatSync(path.join(d, f)).isFile()).sort(); } catch {}
   let images = [];
   try { images = fs.readdirSync(path.join(d, 'images')).filter(f => IMAGES.test(f) && fs.lstatSync(path.join(d, 'images', f)).isFile()).sort(); } catch {}
-  return { slug, nom: typeof meta.nom === 'string' ? meta.nom : slug, type: TYPES.includes(meta.type) ? meta.type : 'perso', cree: meta.cree || null, fichiers, images };
+  let brief = '';
+  try { brief = fs.readFileSync(path.join(d, 'brief.md'), 'utf8'); } catch {}
+  return {
+    slug, nom: typeof meta.nom === 'string' ? meta.nom : slug, type: TYPES.includes(meta.type) ? meta.type : 'perso', cree: meta.cree || null, fichiers, images,
+    rendu: dateRendu(brief), avancement: avancement(fichiers), consignes: fichiers.includes('consignes-prof.md'),
+    cout: Number(conversations['agence:' + slug]?.cout) || 0
+  };
 }
 function listerProjets() {
   try { return fs.readdirSync(PROJETS).filter(s => !s.startsWith('_')).map(lireProjet).filter(Boolean).sort((a, b) => String(b.cree).localeCompare(String(a.cree))); }
@@ -806,6 +816,7 @@ async function traiter(req, res) {
     const nom = typeof corps.nom === 'string' ? corps.nom.trim().slice(0, 80) : '';
     const type = TYPES.includes(corps.type) ? corps.type : null;
     const texte = typeof corps.texte === 'string' ? corps.texte.trim() : '';
+    const rendu = typeof corps.rendu === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(corps.rendu) ? corps.rendu : '';
     const slug = slugifier(nom);
     if (!nom) return envoyer(res, 400, { erreur: 'Donne un nom au projet.' });
     if (!slug) return envoyer(res, 400, { erreur: 'Le nom du projet doit contenir au moins une lettre ou un chiffre.' });
@@ -819,7 +830,12 @@ async function traiter(req, res) {
     fs.mkdirSync(path.join(PROJETS, slug), { recursive: true });
     const cree = new Date().toISOString();
     fs.writeFileSync(path.join(PROJETS, slug, 'projet.json'), JSON.stringify({ nom, type, cree }, null, 2) + '\n');
-    fs.writeFileSync(path.join(PROJETS, slug, 'brief.md'), `# Brief : ${nom}\n\n**Type** : ${type}\n**Reçu le** : ${cree.slice(0, 10)}\n\n${texte}\n`);
+    fs.writeFileSync(path.join(PROJETS, slug, 'brief.md'), `# Brief : ${nom}\n\n**Type** : ${type}\n${rendu ? `**Date de rendu** : ${rendu}\n` : ''}**Reçu le** : ${cree.slice(0, 10)}\n\n${texte}\n`);
+    // Un projet de cours reçoit sa grille du prof vide : Evan la remplit, le Jury la lit en premier
+    if (type === 'cours') {
+      const trame = path.join(PROJETS, '_modeles', 'consignes-prof.md');
+      try { fs.copyFileSync(trame, path.join(PROJETS, slug, 'consignes-prof.md'), fs.constants.COPYFILE_EXCL); } catch {}
+    }
     // Un nouveau projet repart de zéro, même si un ancien projet du même nom a existé
     conversations[fil] = neuf();
     sauver();

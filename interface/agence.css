@@ -484,3 +484,15 @@ button, select, textarea { font: inherit; color: inherit; }
 .galerie figure { margin: 0; }
 .galerie img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--trait); display: block; }
 .galerie figcaption { font-size: 11px; color: var(--encre-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Le suivi des projets */
+.suivi-liste { display: grid; gap: 9px; }
+.suivi-ligne { display: grid; gap: 6px; text-align: left; border: 1px solid var(--trait); background: var(--carte); border-radius: 12px; padding: 11px 13px; cursor: pointer; box-shadow: 0 2px 0 var(--relief); color: inherit; font: inherit; }
+.suivi-ligne:hover { border-color: var(--accent, var(--trait)); }
+.suivi-tete { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.suivi-type { font-size: 12px; opacity: .7; }
+.suivi-barre { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.suivi-barre i { height: 6px; border-radius: 3px; background: var(--trait); opacity: .5; }
+.suivi-barre i.fait { background: var(--accent, #0f766e); opacity: 1; }
+.suivi-info { font-size: 13px; opacity: .85; }
+.champ small { font-weight: 400; opacity: .7; }

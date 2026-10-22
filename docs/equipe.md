@@ -45,15 +45,37 @@ Toi : « Nouveau brief »
   → Sam + Nora : dispositif social et médias, budget, KPI
   → le Jury : relecture comme un prof, note estimée
   → Jade : présentation.html ou site.html (aperçu en direct au studio)
-  → le studio : brief.md, insights.md, strategie.md, reco.md, presentation.html → tu valides chaque fichier
+  → le studio : brief.md, insights.md, strategie.md, idee-creative.md, dispositif-social.md, dispositif-media.md, relecture.md, reco.md, presentation.html → tu valides chaque fichier
 ```
 
-Pour un projet de **cours**, l'agence t'aide à réfléchir : elle explique, challenge, structure et relit. Les fichiers sont des fiches de travail. La version rendue au prof, c'est toi qui l'écris.
+Pour un projet de **cours**, l'agence t'aide à réfléchir : elle explique, challenge, structure et relit. Les fichiers sont des fiches de travail (trame `fiche-travail-cours.md`). La version rendue au prof, c'est toi qui l'écris.
+
+## Les trames : le même format à chaque projet
+
+Chaque livrable a sa trame dans `projets/_modeles/`. Les agents reprennent les mêmes titres de sections, dans le même ordre, pour que tu retrouves toujours les mêmes parties d'un projet à l'autre. Le détail de qui remplit quoi est dans `projets/_modeles/README.md`.
+
+## La grille du prof : `consignes-prof.md`
+
+Pour un projet de **cours**, l'agence crée toute seule un fichier `consignes-prof.md` vide. Recopie-y la consigne et la grille de notation, telles quelles. Le Jury le lit en premier : la grille du prof prime sur les habitudes de l'agence. Dans les autres types de projets, tu peux créer ce fichier à la main dans `projets/<projet>/`.
+
+## Le suivi des projets
+
+Le bouton **Suivi des projets** (dans la barre du haut) montre, pour chaque projet :
+- l'étape en cours (brief, insights, stratégie, idée créative, dispositif, relecture, reco, présentation) et le nombre d'étapes faites ;
+- la date de rendu, si tu l'as indiquée dans le formulaire « Nouveau brief » ;
+- si la grille du prof est là ;
+- le coût du projet à ce jour.
+
+Clique sur un projet pour l'ouvrir.
+
+## La bibliothèque de sources : `docs/sources.md`
+
+C'est la liste des sources que tu as déjà vérifiées (le lien ouvert, le chiffre relu). Inès part de cette liste avant de chercher sur le web, et évite de recommencer les mêmes recherches. Les sources nouvelles qu'Inès trouve arrivent dans `projets/<projet>/sources.md`. **Tu recopies toi-même dans `docs/sources.md` celles que tu valides** : les agents ne peuvent pas écrire hors d'un projet.
 
 ## Comment t'en servir
 
 1. **Lance l'agence** : `npm run agence` dans le Terminal. La page s'ouvre toute seule.
-2. **Nouveau brief** (bouton en haut) : un nom, le type (cours, perso, client), le texte du brief. Claire le lit et lance le circuit.
+2. **Nouveau brief** (bouton en haut) : un nom, le type (cours, perso, client), la date de rendu si tu la connais (facultatif), le texte du brief. Claire le lit et lance le circuit.
 3. **Le chat** à droite : écris comme dans Claude Code. Tu vois chaque étape en direct (« Inès cherche sur le web… »), et le bureau de l'agent qui travaille s'allume.
 4. **Les fenêtres** : chaque proposition d'agent s'ouvre dans une fenêtre. Quand une décision te revient, une fenêtre « À toi de décider » propose 2 à 4 options, la recommandée est marquée. Tu cliques, l'agence continue.
 5. **Le studio** : chaque fichier s'ouvre avant d'être écrit. Tu peux le modifier, puis « Valider et enregistrer » ou « Refuser ».

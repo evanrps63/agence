@@ -164,6 +164,16 @@ try {
   await page.waitForSelector('.liste-fichiers');
   verifier(await page.$$eval('.liste-fichiers button', l => l.map(b => b.textContent).join()) === 'brief.md,insights.md,presentation.html,reco.md', 'le dossier liste les fichiers du projet');
 
+  console.log('Suivi des projets');
+  await page.keyboard.press('Escape');
+  await page.click('button[data-a="suivi"]');
+  await page.waitForSelector('.suivi-ligne');
+  const suivis = await page.$$eval('.suivi-ligne', l => l.map(b => b.textContent).join('|'));
+  verifier(/Étape en cours : Stratégie/.test(suivis), 'le suivi donne l\'étape en cours de chaque projet');
+  await page.click('.suivi-ligne');
+  await page.waitForFunction(() => !document.querySelector('.fenetre[data-cle="suivi"]'));
+  verifier(await page.$eval('#choix-projet', s => s.value) !== '', 'cliquer sur un projet l\'ouvre');
+
   console.log('Sombre et téléphone');
   await page.keyboard.press('Escape');
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
