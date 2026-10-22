@@ -15,7 +15,7 @@ cibles: [familles, intergénérationnel, grand public]
 leviers: [émotion, storytelling, conte, nostalgie musicale, mascotte, artisanat sans IA]
 tags: [animation, conte de Noël, mascotte, food design, retournement d'archétype, viralité organique, brand content]
 resultats_cles: "10,4 Md d'impressions, +1 Md de vues, 21,8 M d'interactions, viralité 17 jours, loup devenu mascotte officielle"
-captures: non incluses (voir section 0)
+captures: docs/campagnes/captures/loup-intermarche/ (plans 01 à 10, palettes)
 ---
 
 # Campagne de référence — Intermarché « Le Mal-Aimé » (Noël 2025)
@@ -26,7 +26,7 @@ Ce fichier est une **fiche de campagne de référence** pour la base de données
 - Il décrit une campagne réelle, déjà diffusée. Les faits sont sourcés (section 11).
 - Utilise-le comme **modèle de raisonnement** (brief → insight → idée → exécution → diffusion), pas comme un contenu à copier.
 - Les **patterns réutilisables** (section 9) sont la partie à appliquer à d'autres briefs.
-- Les **captures d'écran** ne sont pas dans le dépôt : ce sont des images protégées, et le dépôt est public. Les plans numérotés (01 à 10) renvoient aux images du pack d'origine, à garder en local. Ne pas les réutiliser dans un livrable client.
+- Les **captures d'écran** (`docs/campagnes/captures/loup-intermarche/01.png` à `10.png`) sont réservées à l'analyse interne. Elles sont sur GitHub, dans un dépôt public : ne jamais les réutiliser dans un livrable client, ni comme modèle à copier.
 - Ne pas reproduire le style visuel, les personnages ou la musique de cette campagne pour un autre client.
 - Point de vigilance : la valeur perçue de la campagne repose sur le **fait main / sans IA générative**. Ne jamais proposer de « refaire ce style en IA » à un client.
 
