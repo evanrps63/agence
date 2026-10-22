@@ -77,7 +77,7 @@ Le circuit d'une recommandation : brief → reformulation (toi) → insights (et
 - Pour un site internet, une page web ou une présentation, appelle digital (Jade) une fois la stratégie et l'idée créative validées, en lui donnant les fichiers du projet à lire. Ses fichiers .html arrivent tout seuls au studio : ne les recopie jamais.
 - Un agent peut proposer lui-même un fichier avec un bloc FICHIER : il arrive directement au studio, ne le recopie pas.
 - Sois économe : n'appelle que les agents utiles à la demande, donne-leur un contexte court (le brief résumé, les décisions d'Evan, les fichiers à lire) plutôt que tout l'historique, et ne refais pas un travail déjà validé.
-- Les trames des livrables sont dans projets/_modeles/ : idee-creative.md (Hugo), dispositif-social.md (Sam), dispositif-media.md (Nora), relecture.md (le Jury), fiche-travail-cours.md (cours). Quand un agent écrit un de ces fichiers, il reprend la trame du même nom : mêmes titres de sections, dans le même ordre.
+- Les trames des livrables sont dans projets/_modeles/ : idee-creative.md (Hugo), dispositif-social.md (Sam), dispositif-media.md (Nora), storyboard-video.md (Nino, pour une vidéo), relecture.md (le Jury), fiche-travail-cours.md (cours). Quand un agent écrit un de ces fichiers, il reprend la trame du même nom : mêmes titres de sections, dans le même ordre.
 - Les sources déjà vérifiées sont dans docs/sources.md : Inès part de cette liste avant de chercher sur le web.`;
   if (info) {
     texte += `
@@ -110,6 +110,8 @@ try {
     const outils = (fm.tools || 'Read, Grep, Glob').split(',').map(s => s.trim()).filter(o => OUTILS_PERMIS.includes(o));
     DEFS[id] = {
       description: fm.description || '', prompt: m[2], tools: outils,
+      // Les skills de l'agent (design, motion, Remotion…) : passés au CLI, s'il les accepte
+      skills: (fm.skills || '').split(',').map(s => s.trim()).filter(Boolean),
       prenom: fm.prenom || id, poste: fm.poste || '', piece: fm.piece || 'openspace',
       couleur: /^#[0-9a-f]{6}$/i.test(fm.couleur || '') ? fm.couleur : '#475569',
       // Le modèle de l'agent : haiku (rapide, économe), sonnet (équilibré), opus (réflexion poussée)
@@ -119,7 +121,7 @@ try {
 } catch { console.log("Le dossier .claude/agents/ est introuvable : lance l'agence depuis son dossier."); process.exit(1); }
 const AGENTS = Object.keys(DEFS);
 if (!DEFS[PILOTE]) { console.log(`L'agent ${PILOTE} (pilote de l'agence) est introuvable dans .claude/agents/.`); process.exit(1); }
-const pourClaude = d => ({ description: d.description, prompt: d.prompt, tools: d.tools, model: process.env.AGENCE_MODELE || d.model });
+const pourClaude = d => ({ description: d.description, prompt: d.prompt, tools: d.tools, ...(d.skills.length ? { skills: d.skills } : {}), model: process.env.AGENCE_MODELE || d.model });
 
 // Options de sécurité. Sans --restricted (Claude Code trop ancien), on ne lance aucun agent : ils pourraient lire tout le disque.
 const aide = (() => { try { return spawnSync(CLAUDE, ['--help'], { encoding: 'utf8', timeout: 20000 }).stdout || ''; } catch { return ''; } })();

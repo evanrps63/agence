@@ -22,7 +22,7 @@ const ORIENTER = [
   ['redaction', 'Une accroche, un slogan'], ['etudes', 'Des chiffres, un benchmark'],
   ['planning', 'Une question de méthode'], ['jury', 'Faire relire un travail'],
   ['social', 'Une idée de post'], ['media', 'Un budget, des KPI'],
-  ['direction-artistique', 'Une piste visuelle'], ['digital', 'Un site, une présentation'], ['clientele', 'Je ne sais pas à qui demander']
+  ['direction-artistique', 'Une piste visuelle'], ['digital', 'Un site, une présentation'], ['motion', 'Une vidéo, un storyboard'], ['clientele', 'Je ne sais pas à qui demander']
 ];
 
 // ---------- Outils ----------
@@ -118,14 +118,15 @@ const apercu = t => String(t || '').replace(/[#*`>|_]/g, '').replace(/\s+/g, ' '
 
 // ---------- Avatars (dessinés dans la page : symboles #av-<agent>) ----------
 function avatar(id, taille = 36) {
-  return `<svg class="avatar" width="${taille}" height="${taille}" aria-hidden="true"><use href="#av-${esc(POSTE[id] || id)}"/></svg>`;
+  return `<svg class="avatar" width="${taille}" height="${taille}" aria-hidden="true"><use href="#av-${esc(id)}"/></svg>`;
 }
 
 // ---------- Les locaux (décor isométrique, une personne = [data-agent]) ----------
 function enAttente() {
   return messages(filAgence()).filter(m => m.de === 'fichier' && m.statut === 'attente').length;
 }
-const POSTE = { digital: 'production' };
+// Jade et Nino travaillent au poste du Studio (le décor n'a pas de place libre pour un troisième bureau)
+const POSTE = { digital: 'production', motion: 'production' };
 function poste(id) { return document.querySelector(`.locaux [data-agent="${CSS.escape(POSTE[id] || id)}"]`); }
 // Ajuste les pastilles et les bulles à la largeur de leur texte
 function ajusterEtiquette(e) {

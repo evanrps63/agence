@@ -49,7 +49,7 @@ try {
   console.log('Nouveau brief');
   await page.click('.barre [data-a="nouveau-brief"]');
   await page.waitForSelector('#form-brief');
-  verifier(await page.$$eval('.orienter button', l => l.length) === 9, 'l\'accueil propose d\'aller au bon bureau');
+  verifier(await page.$$eval('.orienter button', l => l.length) === 10, 'l\'accueil propose d\'aller au bon bureau');
   await attendre(400);
   await capture('3-nouveau-brief');
   await page.type('#form-brief [name=nom]', 'Oasis été 2027');

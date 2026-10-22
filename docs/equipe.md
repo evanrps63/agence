@@ -16,6 +16,7 @@ Une agence de communication qui tourne sur ton Mac. Tu es le patron : tu donnes 
 | **Nora** · `media` | Média planneuse | Dispositif, mix paid / owned / earned, budget, KPI | Open space |
 | **Jade** · `digital` | Studio créa digital | Met la reco en forme : présentation HTML plein écran ou site internet, au niveau des grandes agences. Tu la vois en aperçu au studio avant de valider | Studio |
 | **Le Jury** · `jury` | Relecture et notation | Relit comme un prof : cohérence, sources, méthode, orthographe, grille de notation | Salle du brief |
+| **Nino** · `motion` | Motion designer vidéo | Storyboard d'une vidéo courte : format, découpage, rythme, mouvements, sous-titres. Pas de MP4 pour l'instant | Partage le poste du Studio avec Jade |
 | **Le studio** | Poste de production | Montre chaque fichier proposé. Tu valides ou tu refuses ; rien n'est écrit sans ton clic | Studio |
 
 Inès, Max, Sam, Nora et le Jury peuvent chercher sur le web (en lecture seule). Hugo, Léa et Claire travaillent à partir du dossier.
@@ -27,7 +28,7 @@ Chaque agent finit par un verdict : **OK**, **À retravailler** ou **Décision d
 | Modèle | Pour qui | Pourquoi |
 |---|---|---|
 | **Opus** (le plus réfléchi, le plus cher) | Max, Jade | La stratégie est le cœur de la reco : c'est là que la réflexion compte le plus. |
-| **Sonnet** (équilibré) | Claire, Inès, Hugo, Léa, le Jury | Bon niveau pour piloter, chercher des sources, écrire et relire. |
+| **Sonnet** (équilibré) | Claire, Inès, Hugo, Léa, le Jury, Nino | Bon niveau pour piloter, chercher des sources, écrire et relire. |
 | **Haiku** (rapide, le moins cher) | Sam, Nora | Déclinaisons plus cadrées : plateformes, calendrier, mix média. |
 
 Pour changer : la ligne `model:` (haiku, sonnet ou opus) dans `.claude/agents/<agent>.md`, puis relance l'agence. Pour tout faire tourner sur un seul modèle (par exemple pour des essais pas chers) : `AGENCE_MODELE=haiku npm run agence`.

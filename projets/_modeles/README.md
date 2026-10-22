@@ -11,6 +11,7 @@ Chaque fichier ici est un modèle vide. Les agents reprennent le même titre de 
 | `dispositif-social.md` | Sam | Après l'idée créative |
 | `dispositif-media.md` | Nora | Après l'idée créative |
 | `relecture.md` | Le Jury | Avant tout livrable final |
+| `storyboard-video.md` | Nino | Quand Evan veut une vidéo |
 | `reco.md` | Max, avec l'équipe | Une fois le circuit terminé |
 | `fiche-travail-cours.md` | Claire, pour un projet de cours | Au début d'un cours |
 | `consignes-prof.md` | Toi | Dès que tu as la grille du prof (créée toute seule pour un cours) |
