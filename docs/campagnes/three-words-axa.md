@@ -23,6 +23,7 @@ Statut : analyse à partir de la presse et des bases de prix. Le dossier de cand
 - **Fait** : lancement en mars 2025, à la télévision, en affichage, sur le digital et les réseaux sociaux. Source : [LBB](https://lbbonline.com/news/axa-home-insurance-policies-recognises-domestic-abuse-with-three-words).
 
 ## Les résultats et les récompenses
+- **Fait** : Grand Prix Stratégies de la publicité 2025, sur la campagne contre les violences conjugales. Source : [Stratégies](https://www.strategies.fr/actualites/marques/LQ5120827C/grand-prix-strategies-de-la-publicite-axa-assure-contre-les-violences-conjugales.html).
 - **Fait** : prix à Cannes Lions 2025 (Grand Prix Direct, puis Grand Prix Creative Business Transformation) selon [Ad Age](https://adage.com/events-awards/cannes-lions/aa-axa-three-words-creative-business-transformation/). Epica 2025 : Grand Prix Responsibility.
 - **Attention** : les sources ne sont pas d'accord sur le nombre de Grands Prix. [Love the Work](https://www.lovethework.com/work-awards/campaigns/axa-three-words-1635321) ne retient qu'un Gold. Vérifier sur le site de Cannes Lions.
 - **Pas trouvé** : aucun chiffre public sur le nombre de victimes relogées. Sans ce chiffre, on ne peut pas dire combien la campagne a aidé.

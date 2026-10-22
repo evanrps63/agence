@@ -20,9 +20,13 @@ Légende des récompenses : GP = Grand Prix, Or / Argent / Bronze = prix du fest
 | « Three Words » (à nouveau) | AXA | Publicis Conseil | Cannes Lions 2026 : GP Creative Effectiveness | 2026 | [CB News](https://www.cbnews.fr/node/102043) | |
 | « Le Mal aimé » : le loup d'Intermarché (spot de Noël, animation) | Intermarché | Romance (studio Illogic) | Cannes Lions 2026 : Bronze Health & Wellness | 2025 | [La Réclame](https://lareclame.fr/romance) ; [CB News](https://www.cbnews.fr/node/97450) | |
 | « The Trojan Fax » | IUCN × Fujifilm | BETC Paris | Cannes Lions 2026 : Gold Print ; Silver Creative B2B | 2026 | [LLLLITL](https://www.llllitl.fr/2026/06/cannes-lions-2026-palmares-france/) | |
-| « 2036 » | Association Antoine Alléno | Havas Paris | Cannes Lions 2026 : Silver Health & Wellness et Silver Outdoor | 2026 | [LLLLITL](https://www.llllitl.fr/2026/06/cannes-lions-2026-palmares-france/) | |
-| Campagne Back Market (non précisée) | Back Market | Marcel | Cannes Lions 2026 : Gold Outdoor | 2026 | [La Réclame](https://lareclame.fr/cannes-lions-2026-palmares-agences-francaises-337100) | |
-| Campagne Auchan (non précisée) | Auchan | TBWA\Paris | Cannes Lions 2026 : Bronze Health & Wellness | 2026 | [LLLLITL](https://www.llllitl.fr/2026/06/cannes-lions-2026-palmares-france/) | |
+| « 2036 » | Association Antoine Alléno | Havas Paris | Cannes Lions 2026 : Silver Health & Wellness et Silver Outdoor | 2026 | [La Réclame](https://lareclame.fr/cannes-lions-2026-palmares-agences-francaises-337100) | |
+| « Don't Call It Love » | YSL Beauté | BETC Paris | Cannes Lions 2025 : Bronze Luxury (à vérifier) | 2025 | [BETC](https://betc.com/en/lifestyle/dont-call-it-love-ysl-beauty-en) | |
+| « Retrouvons notre Fraternité » | LICRA | Marcel | Prix de la Communication citoyenne 2025 : Grand Prix | 2024-2025 | [CB News](https://www.cbnews.fr/conseil/grand-prix-communication-citoyenne-2025-licra-marcel-recompensees-retrouvons-notre) | |
+| « Être une femme ne devrait jamais être un risque » | AXA | Publicis Conseil, WPP Media | Effie France 2025 : Or Efficacité dans la durée | 2023-2025 | [Effie](https://www.effie.fr/prix/etre-une-femme-ne-devrait-jamais-etre-un-risque-proteger-ce-qui-compte-comment-axa-a-conquis-le-coeur-des-francais/) | |
+| « Group Therapy » | AXA | VML Paris, Hartbeat | Epica 2025 : Or Branded content | 2025 | [VML](https://www.vml.com/news/epica-awards-2025) | |
+| « Let's End Fast Tech » | Back Market | Marcel | Cannes Lions 2026 : Gold Outdoor et Gold Challenger Brand | 2026 | [La Réclame](https://lareclame.fr/cannes-lions-2026-palmares-agences-francaises-337100) | |
+| « Colorfood » (aussi « Le choix des couleurs ») | Auchan | TBWA\Paris | Cannes Lions 2026 : Bronze Health & Wellness | 2026 | [LLLLITL](https://www.llllitl.fr/2026/06/cannes-lions-2026-palmares-france/) | |
 
 ## Complément : 2024 (hors période principale)
 
@@ -55,3 +59,11 @@ Chaque campagne analysée a sa fiche dans `docs/campagnes/`, avec le brief, l'in
 - [The partnership that changed everything (LVMH)](docs/campagnes/partenariat-lvmh-jo.md)
 - [On s'habitue vite à la classe Ulys (Vinci Autoroutes)](docs/campagnes/ulys-vinci-autoroutes.md)
 - [Le Mal aimé (Intermarché)](docs/campagnes/loup-intermarche.md)
+- [Don't Call It Love (YSL Beauté)](docs/campagnes/dont-call-it-love-ysl.md)
+- [Retrouvons notre Fraternité (LICRA)](docs/campagnes/retrouvons-notre-fraternite-licra.md)
+- [Être une femme ne devrait jamais être un risque (AXA)](docs/campagnes/etre-une-femme-axa.md)
+- [Group Therapy (AXA)](docs/campagnes/group-therapy-axa.md)
+- [The Trojan Fax (IUCN, Fujifilm)](docs/campagnes/trojan-fax-iucn.md)
+- [2036 (Association Antoine Alléno)](docs/campagnes/2036-antoine-alleno.md)
+- [Let's End Fast Tech (Back Market)](docs/campagnes/back-market-fast-tech.md)
+- [Colorfood (Auchan)](docs/campagnes/colorfood-auchan.md)
