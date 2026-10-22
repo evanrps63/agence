@@ -474,6 +474,12 @@ button, select, textarea { font: inherit; color: inherit; }
 /* ---------- aperçu des sites et présentations ---------- */
 .cadre-apercu { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; border: 1px solid var(--trait); background: #fff; box-shadow: 0 3px 0 var(--relief); }
 .cadre-apercu iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+/* Le lecteur HTML : la page occupe la fenêtre, et le plein écran la fait remplir l'écran */
+.cadre-lecteur { aspect-ratio: auto; height: min(66vh, 620px); }
+.cadre-lecteur .plein-ecran { position: absolute; top: 10px; right: 10px; z-index: 2; }
+.cadre-lecteur:fullscreen { width: 100vw; height: 100vh; border: 0; border-radius: 0; box-shadow: none; }
+/* Texte brut (CSV, TXT) : on garde les espaces et les retours à la ligne */
+.texte-brut { margin: 0; padding: 12px; max-height: 60vh; overflow: auto; white-space: pre-wrap; word-break: break-word; font: 12.5px/1.55 ui-monospace, Menlo, monospace; background: var(--carte); border: 1px solid var(--trait); border-radius: 12px; }
 .lien { border: none; background: none; padding: 0; color: var(--primaire); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
 
 .atelier { font-size: 12.5px; color: var(--ok); background: var(--ok-doux); border-radius: 10px; padding: 7px 10px; margin: 0 0 10px; line-height: 1.45; }

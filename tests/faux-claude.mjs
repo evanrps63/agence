@@ -54,6 +54,9 @@ process.stdin.on('end', async () => {
     final = 'Début ' + 'é€à'.repeat(40000) + ' fin';
   } else if (entree.includes('PIEGES')) {
     final = `Voici des fichiers.\n\n<<<FICHIER projets/${projet}/../../evil.md\npiège 1\nFICHIER>>>\n\n<<<FICHIER projets/autre-projet/x.md\npiège 2\nFICHIER>>>\n\n<<<FICHIER projets/${projet}/CLAUDE.md\npiège 3\nFICHIER>>>\n\n<<<FICHIER projets/${projet}/claude.md\npiège 4\nFICHIER>>>\n\n<<<FICHIER projets/${projet}/Stratégie.md\n# Ma stratégie précieuse\nFICHIER>>>`;
+  } else if (entree.includes('FORMATS')) {
+    // Une proposition de chaque format (Word et PDF fabriqués à la validation), plus un format interdit
+    final = `Voici les fichiers.\n\n<<<FICHIER projets/${projet}/rapport.docx\n# Rapport\n\nLe **constat** : 3 < 5 & « ça » marche.\n- Une piste\nFICHIER>>>\n\n<<<FICHIER projets/${projet}/fiche.pdf\n<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Fiche</title></head><body><h1>Fiche Oasis</h1><p>Un paragraphe.</p></body></html>\nFICHIER>>>\n\n<<<FICHIER projets/${projet}/donnees.csv\nCible,Taille\nÉtudiants,12\nFICHIER>>>\n\n<<<FICHIER projets/${projet}/notes.txt\nNotes brutes.\nFICHIER>>>\n\n<<<FICHIER projets/${projet}/macro.exe\npiège\nFICHIER>>>`;
   } else if (/je choisis/i.test(entree)) {
     final = `Bien noté. Voici la reco.\n\n<<<FICHIER projets/${projet}/reco.md\n# Recommandation\n\nLe plan **validé**.\nFICHIER>>>\n\n<<<CHOIX\n{"question": "Le "vrai" goût ?", "options": [{"titre": "A"}, {"titre": "B"}]}\nCHOIX>>>`;
   } else {

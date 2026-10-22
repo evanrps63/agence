@@ -77,10 +77,26 @@ Pour un projet de **cours**, l'agence t'aide à réfléchir : elle explique, cha
 - **Coût** : c'est l'étape la plus chère (Jade en opus écrit deux fois un gros fichier, Léa regarde des images). Demande-la une fois la stratégie et l'idée validées.
 - L'aperçu et le navigateur de l'atelier sont isolés : le code d'une présentation ne peut ni lire tes fichiers, ni parler à l'agence, ni charger autre chose que les polices Google.
 
+## Les fichiers : HTML, PDF, Word, CSV, TXT
+
+Les agents peuvent te proposer un fichier dans ces formats. Rien n'est écrit sans ton clic « Valider et enregistrer ».
+
+| Format | Ce que tu obtiens |
+|---|---|
+| **.html** | une page web ou une présentation, que tu lis dans l'agence |
+| **.pdf** | un document prêt à imprimer ou à envoyer, en page A4. Fabriqué au moment où tu valides (il faut Google Chrome) |
+| **.docx** | un document Word, ouvrable dans Word, Pages ou Google Docs. Fabriqué au moment où tu valides |
+| **.csv** | un tableau, ouvrable dans Excel ou Numbers |
+| **.md**, **.txt** | du texte simple |
+
+**Le lecteur** : dans le studio, « Lire le produit (HTML) » ouvre la présentation ou le site du projet en grand. Dans « Dossier du projet », clique sur un fichier pour l'ouvrir. Le HTML s'affiche (bouton « Plein écran »), le texte s'affiche tel quel, et le PDF ou le Word se téléchargent.
+
+Limites : les tableaux d'un Word arrivent sous forme de lignes de texte, et il n'y a pas encore de PowerPoint ni d'Excel (un CSV s'ouvre dans Excel).
+
 ## Les protections (toujours actives)
 
 - La page ne répond **que sur ton Mac** (127.0.0.1) et demande un **jeton secret**, nouveau à chaque lancement, caché dans l'adresse ouverte par `npm run agence`.
-- Les agents sont **en lecture seule** : pas de commande, pas d'écriture. Ils ne lisent que le dossier de l'agence, sauf les conversations (`.claude/agence/`) et le dossier git (`.git/`). Ils proposent ; le serveur écrit **seulement dans `projets/<projet>/`**, en `.md`, après ton clic.
+- Les agents sont **en lecture seule** : pas de commande, pas d'écriture. Ils ne lisent que le dossier de l'agence, sauf les conversations (`.claude/agence/`) et le dossier git (`.git/`). Ils proposent ; le serveur écrit **seulement dans `projets/<projet>/`**, dans les formats ci-dessus, après ton clic.
 - Un fichier proposé ailleurs (autre projet, `../`, sous-dossier, nom réservé comme `CLAUDE.md`) est refusé et signalé en rouge dans le chat ; son contenu reste lisible dans une proposition.
 - Une proposition plus ancienne d'un même fichier ne peut pas écraser la nouvelle, ni un fichier que tu as modifié à la main depuis.
 - Claire ne peut appeler que les 8 agents de l'équipe (garde-fou `scripts/garde-agents.mjs`).

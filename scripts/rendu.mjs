@@ -18,12 +18,12 @@ export function trouverChrome() {
   if (process.env.CHROME_BIN) return fs.existsSync(process.env.CHROME_BIN) ? process.env.CHROME_BIN : null;
   return CHROMES.find(c => { try { return fs.statSync(c).isFile(); } catch { return false; } }) || null;
 }
-function chargerPuppeteer(code) {
+export function chargerPuppeteer(code) {
   try { return createRequire(path.join(code, 'package.json'))('puppeteer-core'); } catch { return null; }
 }
 const attendre = ms => new Promise(r => setTimeout(r, ms));
 const empreinte = b => crypto.createHash('sha1').update(b).digest('hex');
-const PERMIS = /^(data:|blob:|about:|https:\/\/fonts\.googleapis\.com\/|https:\/\/fonts\.gstatic\.com\/)/;
+export const PERMIS = /^(data:|blob:|about:|https:\/\/fonts\.googleapis\.com\/|https:\/\/fonts\.gstatic\.com\/)/;
 
 // Ce qui déborde ou se coupe dans l'écran visible (zone de largeur l, hauteur h)
 function defauts(l, h) {

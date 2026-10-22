@@ -164,6 +164,26 @@ try {
   await page.waitForSelector('.liste-fichiers');
   verifier(await page.$$eval('.liste-fichiers button', l => l.map(b => b.textContent).join()) === 'brief.md,insights.md,presentation.html,reco.md', 'le dossier liste les fichiers du projet');
 
+  console.log('Le lecteur');
+  await page.click('.liste-fichiers button[data-v="presentation.html"]');
+  await page.waitForSelector('.cadre-lecteur iframe[src]', { timeout: 10000 });
+  verifier(await page.$eval('.cadre-lecteur iframe', f => f.getAttribute('src').startsWith('/apercu/')), 'le HTML s\'ouvre dans le lecteur, par une adresse d\'aperçu isolée');
+  verifier(await page.$eval('.cadre-lecteur', c => c.getBoundingClientRect().height > 300), 'le lecteur a une vraie hauteur (la page est lisible)');
+  await attendre(600);
+  await capture('9-lecteur');
+  await page.click('.cadre-lecteur .plein-ecran');
+  await attendre(300);
+  const plein = await page.evaluate(() => document.fullscreenElement && document.fullscreenElement.classList.contains('cadre-lecteur'));
+  verifier(plein, 'le bouton « Plein écran » affiche la page sur tout l\'écran');
+  if (plein) { await page.evaluate(() => document.exitFullscreen()); await attendre(300); }
+  await page.evaluate(() => [...document.querySelectorAll('.fenetre')].forEach(w => w.querySelector('.fermer')?.click()));
+  await page.click('.locaux [data-agent="production"]');
+  await page.waitForSelector('.menu-poste');
+  verifier(await page.$eval('.menu-poste', m => m.textContent.includes('Lire le produit (HTML)')), 'le studio propose « Lire le produit (HTML) »');
+  await page.evaluate(() => [...document.querySelectorAll('.menu-poste button')].find(b => b.dataset.a === 'lecteur').click());
+  await page.waitForSelector('.cadre-lecteur iframe[src]', { timeout: 10000 });
+  verifier(await page.$eval('.fenetre[data-cle^="lire:"] .titre-fenetre strong', s => s.textContent) === 'presentation.html', 'le raccourci ouvre la présentation du projet');
+
   console.log('Sombre et téléphone');
   await page.keyboard.press('Escape');
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);

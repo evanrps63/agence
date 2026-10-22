@@ -461,12 +461,15 @@ function ouvrirMessage(m, f) {
   } else if (m.de === 'fichier') {
     const attente = m.statut === 'attente';
     const etat = { attente: m.existe ? 'Remplacera la version actuelle' : 'Nouveau fichier', valide: 'Enregistré', refuse: 'Refusé, rien n\'a été écrit', remplace: 'Remplacé par une version plus récente' }[m.statut];
-    const web = /\.html$/.test(m.chemin);
+    // Un HTML ou un PDF s'affiche en page (le PDF est fabriqué à partir de cette mise en page) ; le CSV et le TXT en texte brut
+    const web = /\.(html|pdf)$/.test(m.chemin), brut = /\.(csv|txt)$/.test(m.chemin);
+    const fabrique = m.chemin.endsWith('.pdf') ? ' · le PDF est fabriqué quand tu valides' : m.chemin.endsWith('.docx') ? ' · le Word est fabriqué quand tu valides' : '';
     const vue = web ? '<div class="cadre-apercu" data-vue="apercu"><iframe class="apercu" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" title="Aperçu" referrerpolicy="no-referrer"></iframe></div>'
+      : brut ? `<pre class="texte-brut" data-vue="apercu">${esc(m.contenu)}</pre>`
       : `<div class="md" data-vue="apercu">${mdSur(m.contenu)}</div>`;
     const w = fenetre({
       cle: m.id, agentId: m.agent === 'digital' ? 'digital' : 'production', titre: m.chemin.split('/').pop(), sous: `${m.agent === 'digital' ? 'Jade · ' : ''}Studio · ${etat}`, importante: attente, largeur: web ? 1040 : 680,
-      html: `<p class="chemin">${esc(m.chemin)}${m.tronque ? ' · trop long, coupé' : ''}${web ? ' · <button class="lien" data-a="grand">Ouvrir en grand ↗</button>' : ''}</p>${web ? resumeAtelier(m.atelier) : ''}${attente ? `<div class="onglets"><button class="actif" data-a="onglet" data-v="apercu">Aperçu</button><button data-a="onglet" data-v="modifier">${web ? 'Code' : 'Modifier'}</button></div>` : ''}${vue}${attente ? `<textarea class="edition" data-vue="modifier" hidden>${esc(m.contenu)}</textarea>` : ''}`,
+      html: `<p class="chemin">${esc(m.chemin)}${m.tronque ? ' · trop long, coupé' : ''}${fabrique}${web ? ' · <button class="lien" data-a="grand">Ouvrir en grand ↗</button>' : ''}</p>${web ? resumeAtelier(m.atelier) : ''}${attente ? `<div class="onglets"><button class="actif" data-a="onglet" data-v="apercu">Aperçu</button><button data-a="onglet" data-v="modifier">${web ? 'Code' : 'Modifier'}</button></div>` : ''}${vue}${attente ? `<textarea class="edition" data-vue="modifier" hidden>${esc(m.contenu)}</textarea>` : ''}`,
       bas: attente ? `<span class="aide">Rien n'est écrit sans ton clic.</span><button class="bouton refuser" data-a="decider" data-v="refuser" data-id="${esc(m.id)}">Refuser</button><button class="bouton valider" data-a="decider" data-v="valider" data-id="${esc(m.id)}">Valider et enregistrer</button>` : '<button class="bouton" data-a="fermer">Fermer</button>'
     });
     w.dataset.fil = f;
@@ -539,17 +542,55 @@ async function chargerApercu(w, source) {
     if (f) f.src = adresse;
   } catch (e) { toast(e.message); }
 }
+// Le lecteur : un fichier du projet s'ouvre dans l'agence. Le HTML s'affiche en grand (plein écran possible),
+// le texte s'affiche tel quel, et le PDF ou le Word se téléchargent pour s'ouvrir dans leur logiciel.
 async function lireFichier(nom) {
+  const cle = 'lire:' + E.projet + '/' + nom, sous = `projets/${E.projet}/`;
   if (/\.html$/.test(nom)) {
-    const w = fenetre({ cle: 'lire:' + E.projet + '/' + nom, agentId: 'digital', titre: nom, sous: `projets/${E.projet}/`, largeur: 1040,
-      html: `<p class="chemin">projets/${esc(E.projet)}/${esc(nom)} · <button class="lien" data-a="grand">Ouvrir en grand ↗</button></p><div class="cadre-apercu"><iframe class="apercu" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" title="Aperçu" referrerpolicy="no-referrer"></iframe></div>`,
+    const w = fenetre({ cle, agentId: 'digital', titre: nom, sous: 'Lecteur · ' + sous, largeur: 1100,
+      html: `<p class="chemin">${esc(sous + nom)} · <button class="lien" data-a="grand">Ouvrir dans un onglet ↗</button></p><div class="cadre-apercu cadre-lecteur"><iframe class="apercu" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" title="Aperçu" referrerpolicy="no-referrer"></iframe><button class="bouton petit plein-ecran" data-a="plein-ecran">Plein écran</button></div>`,
       bas: '<button class="bouton" data-a="fermer">Fermer</button>' });
     return chargerApercu(w, { projet: E.projet, nom });
   }
+  if (/\.(pdf|docx)$/.test(nom)) {
+    fenetre({ cle, agentId: 'production', titre: nom, sous, largeur: 480,
+      html: `<p>${/\.pdf$/.test(nom) ? 'Un PDF' : 'Un document Word'} ne s'affiche pas dans l'agence : télécharge-le, il s'ouvrira dans ton logiciel.</p>`,
+      bas: `<button class="bouton" data-a="fermer">Fermer</button><button class="bouton principal" data-a="telecharger" data-v="${esc(nom)}">Télécharger</button>` });
+    return;
+  }
   try {
     const { contenu } = await api(`/api/fichier?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(nom)}`);
-    fenetre({ cle: 'lire:' + E.projet + '/' + nom, agentId: 'production', titre: nom, sous: `projets/${E.projet}/`, html: `<div class="md">${md(contenu)}</div>`, bas: '<button class="bouton" data-a="fermer">Fermer</button>', largeur: 680 });
+    const brut = /\.(csv|txt)$/.test(nom);
+    fenetre({ cle, agentId: 'production', titre: nom, sous, largeur: 680,
+      html: brut ? `<pre class="texte-brut">${esc(contenu)}</pre>` : `<div class="md">${md(contenu)}</div>`,
+      bas: `<button class="bouton" data-a="fermer">Fermer</button><button class="bouton" data-a="telecharger" data-v="${esc(nom)}">Télécharger</button>` });
   } catch (e) { toast(e.message); }
+}
+// Le produit HTML du projet (présentation ou site, sinon le premier fichier HTML) : le raccourci du studio
+function lireProduit() {
+  const p = E.projets.find(x => x.slug === E.projet);
+  const html = p ? p.fichiers.filter(f => /\.html$/.test(f)) : [];
+  const produit = html.find(f => /^(presentation|site)\.html$/.test(f)) || html[0];
+  if (!produit) { toast('Pas encore de présentation ni de site en HTML dans ce projet.'); return; }
+  lireFichier(produit);
+}
+// Télécharge un fichier du projet : le jeton part dans l'en-tête, jamais dans l'adresse
+async function telecharger(nom) {
+  try {
+    const r = await fetch(`/api/telecharger?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(nom)}`, { headers: { 'X-Jeton': JETON } });
+    if (!r.ok) throw new Error('Ce fichier est introuvable.');
+    const url = URL.createObjectURL(await r.blob());
+    const lien = Object.assign(document.createElement('a'), { href: url, download: nom });
+    document.body.appendChild(lien);
+    lien.click();
+    lien.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch (e) { toast(e.message); }
+}
+// Plein écran pour le lecteur HTML (Échap ou le même bouton pour revenir)
+function basculerPleinEcran(cadre) {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (cadre) cadre.requestFullscreen().catch(() => toast('Le navigateur a refusé le plein écran.'));
 }
 function menuPoste(id, bouton) {
   document.querySelector('.menu-poste')?.remove();
@@ -557,7 +598,7 @@ function menuPoste(id, bouton) {
   const m = document.createElement('div');
   m.className = 'menu-poste';
   const lignes = id === 'production'
-    ? [['ecrire-digital', 'Écrire à Jade (sites, présentations)'], ['fichiers-attente', `Fichiers à valider (${enAttente()})`], ['dossier', 'Dossier du projet']]
+    ? [['ecrire-digital', 'Écrire à Jade (sites, présentations)'], ['fichiers-attente', `Fichiers à valider (${enAttente()})`], ['lecteur', 'Lire le produit (HTML)'], ['dossier', 'Dossier du projet']]
     : [['ecrire', `Écrire à ${a.prenom}`], ['fiche', 'Ce que fait ' + a.prenom], ...(id === E.pilote ? [['retour', 'Chat de l\'agence (Claire pilote)']] : [])];
   m.innerHTML = `<div class="entete">${avatar(id, 34)}<div><strong>${esc(a.prenom)}</strong><span>${esc(a.poste)}</span></div></div>` + lignes.map(([act, t]) => `<button data-a="${act}" data-v="${esc(id)}">${esc(t)}</button>`).join('');
   document.body.appendChild(m);
@@ -581,6 +622,9 @@ document.addEventListener('click', async ev => {
     case 'circuit': jouerCircuit(); break;
     case 'dossier': document.querySelector('.menu-poste')?.remove(); fenetreDossier(); break;
     case 'lire': lireFichier(v); break;
+    case 'lecteur': document.querySelector('.menu-poste')?.remove(); lireProduit(); break;
+    case 'telecharger': telecharger(v); break;
+    case 'plein-ecran': if (w) basculerPleinEcran(w.querySelector('.cadre-lecteur')); break;
     case 'fermer': fermer(w); break;
     case 'theme': {
       const sombre = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -621,6 +665,7 @@ document.addEventListener('click', async ev => {
       if (v === 'apercu') {
         const ed = w.querySelector('.edition');
         if (w.querySelector('iframe.apercu')) chargerApercu(w, { fil: w.dataset.fil, id: w.dataset.cle, contenu: ed.value });
+        else if (w.querySelector('pre[data-vue]')) w.querySelector('pre[data-vue]').textContent = ed.value;
         else w.querySelector('.md[data-vue]').innerHTML = md(ed.value);
       }
       break;
