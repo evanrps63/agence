@@ -27,7 +27,6 @@ Les sources donnent des totaux qui ne concordent pas (par exemple 13, 18, 45 ou 
 
 - Les pages officielles des palmarès (Cannes Lions, Effie France, Grand Prix Stratégies) pour vérifier chaque ligne.
 - La colonne « DA à analyser » : couleurs, typographies, photo, mise en page, logo. À remplir à partir des visuels, avec Léa.
-- Le loup d'Intermarché : une plainte de l'ONG Bloom (« déloyale, malhonnête et mensongère », décembre 2025) et des accusations de plagiat sont mentionnées dans la presse. À vérifier avant de présenter cette campagne comme un modèle.
 - Les campagnes du Grand Prix Stratégies 2025 hors luxe : palmarès non trouvé dans les sources.
 - 2026 : Effie France 2026 et Grand Prix Stratégies 2026 introuvables dans les sources. Palmarès Cannes 2026 couvert par la presse, pas encore campagne par campagne.
 

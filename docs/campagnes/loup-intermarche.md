@@ -15,7 +15,7 @@ cibles: [familles, intergénérationnel, grand public]
 leviers: [émotion, storytelling, conte, nostalgie musicale, mascotte, artisanat sans IA]
 tags: [animation, conte de Noël, mascotte, food design, retournement d'archétype, viralité organique, brand content]
 resultats_cles: "10,4 Md d'impressions, +1 Md de vues, 21,8 M d'interactions, viralité 17 jours, loup devenu mascotte officielle"
-captures: captures/01.png à captures/10.png
+captures: non incluses (voir section 0)
 ---
 
 # Campagne de référence — Intermarché « Le Mal-Aimé » (Noël 2025)
@@ -26,7 +26,7 @@ Ce fichier est une **fiche de campagne de référence** pour la base de données
 - Il décrit une campagne réelle, déjà diffusée. Les faits sont sourcés (section 11).
 - Utilise-le comme **modèle de raisonnement** (brief → insight → idée → exécution → diffusion), pas comme un contenu à copier.
 - Les **patterns réutilisables** (section 9) sont la partie à appliquer à d'autres briefs.
-- Les **captures** (`captures/01.png` à `10.png`) sont réservées à l'analyse interne. Ne pas les réutiliser dans un livrable client.
+- Les **captures d'écran** ne sont pas dans le dépôt : ce sont des images protégées, et le dépôt est public. Les plans numérotés (01 à 10) renvoient aux images du pack d'origine, à garder en local. Ne pas les réutiliser dans un livrable client.
 - Ne pas reproduire le style visuel, les personnages ou la musique de cette campagne pour un autre client.
 - Point de vigilance : la valeur perçue de la campagne repose sur le **fait main / sans IA générative**. Ne jamais proposer de « refaire ce style en IA » à un client.
 
@@ -86,7 +86,7 @@ Ce fichier est une **fiche de campagne de référence** pour la base de données
 - **Grammaire live action dans la 3D** : caméra épaule, faible profondeur de champ, premiers plans flous.
 
 ### Système couleur
-| Phase | Dominante | Émotion | Captures |
+| Phase | Dominante | Émotion | Plans |
 |---|---|---|---|
 | Rejet / solitude | Gris-lavande désaturé | Isolement | 10, 03 |
 | Premiers pas | Bleus froids + touches orange (produits) | Curiosité | 02, 08 |
@@ -99,7 +99,7 @@ Ce fichier est une **fiche de campagne de référence** pour la base de données
 - **Lumière** : toujours motivée par une source dans le décor (soleil voilé, feu, bougie, guirlandes).
 
 ### Palettes extraites (6 teintes dominantes par plan)
-| Capture | Plan | Codes |
+| Plan | Séquence | Codes |
 |---|---|---|
 | 01 | Cuisine (plan clé produit) | #543526 #814D34 #201812 #9D705C #CC6A2F #ECB976 |
 | 02 | Pêche | #9CB2C9 #6D849F #3D4D67 #849AB5 #556984 #B1C2D3 |
@@ -131,10 +131,10 @@ Ce fichier est une **fiche de campagne de référence** pour la base de données
 - **Référence** : *Le Voyage de Chihiro* (Ghibli).
 - **Codes maison conservés** : top shots de cuisine, plans « qui auraient pu être faits en vrai ».
 - **4 mises en scène du produit** :
-  1. L'étal : produits bruts alignés comme une vitrine (capture 01)
-  2. Le produit en amorce floue au premier plan (capture 08)
-  3. Le plat au centre exact de l'image (capture 06)
-  4. Le plat comme geste de lien social (capture 04)
+  1. L'étal : produits bruts alignés comme une vitrine (plan 01)
+  2. Le produit en amorce floue au premier plan (plan 08)
+  3. Le plat au centre exact de l'image (plan 06)
+  4. Le plat comme geste de lien social (plan 04)
 - **Preuve** : la « quiche du Loup » est devenue une fiche recette Marmiton.
 
 ---
@@ -167,10 +167,6 @@ Ce fichier est une **fiche de campagne de référence** pour la base de données
 - Écoutes de Claude François multipliées (jusqu'à +8282 % en Allemagne)
 - Loup devenu mascotte officielle, peluche à 700 000 exemplaires (19,90 €, made in France), long métrage du studio en préparation
 
-### Points faibles
-- Merchandising non anticipé → arnaques et faux sites
-- Photomatons IA retirés (contradiction avec le message)
-- Critiques : décalage discours / offre en rayon (Reporterre), poisson vs flotte de pêche industrielle, accusation de plagiat (*Un Noël pour le loup*, Thierry Dedieu, 2017)
 
 ---
 
@@ -217,5 +213,4 @@ Toute nouvelle fiche de campagne doit suivre cette structure :
 - Packshot Mag : https://www.packshotmag.com/films/intermarche-le-mal-aime/
 - Écran Total : https://ecran-total.fr/2025/12/12/intermarche-mise-sur-lanimation-artisanale-pour-sa-publicite-de-noel-le-mal-aime/
 - The Conversation : https://theconversation.com/le-loup-mal-aime-les-ressorts-de-la-pub-dintermarche-au-succes-planetaire-272197
-- Reporterre : https://reporterre.net/Pub-d-Intermarche-ce-que-le-conte-de-Noel-ne-dit-pas
 - Presse-citron (peluche) : https://www.presse-citron.net/intermarche-lance-enfin-la-peluche-de-son-celebre-loup-voici-son-prix-et-pourquoi-il-faudra-faire-vite/
