@@ -14,6 +14,7 @@ import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { photographier, trouverChrome } from './rendu.mjs';
 import { avancement, dateRendu } from './suivi.mjs';
+import { rendreVideo, verifierComposition } from './video.mjs';
 
 const code = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const racine = process.env.AGENCE_RACINE || code;
@@ -132,7 +133,7 @@ const TROP_ANCIEN = "Claude Code est absent ou trop ancien pour l'agence : tape 
 
 // ---------- Projets ----------
 const SLUG = /^[a-z0-9][a-z0-9-]{0,59}$/;
-const NOM_FICHIER = /^[a-z0-9][a-z0-9_-]{0,59}\.(md|html)$/;
+const NOM_FICHIER = /^[a-z0-9][a-z0-9_-]{0,59}\.(md|html|tsx|mp4)$/;
 const RESERVES = /^(claude|claude\.local|agents?|readme)\.md$/i;
 const TYPES = ['cours', 'perso', 'client'];
 function slugifier(s) {
@@ -170,7 +171,7 @@ function listerProjets() {
 function cheminPermis(chemin, projet) {
   const c = String(chemin || '').trim();
   if (!projet) return { erreur: "aucun projet n'est ouvert" };
-  const m = c.match(/^projets\/([a-z0-9][a-z0-9-]{0,59})\/([a-z0-9][a-z0-9_-]{0,59}\.(?:md|html))$/);
+  const m = c.match(/^projets\/([a-z0-9][a-z0-9-]{0,59})\/([a-z0-9][a-z0-9_-]{0,59}\.(?:md|html|tsx))$/);
   if (!m) {
     if (c.includes('..')) return { erreur: 'le chemin sort du dossier du projet' };
     if (/^projets\/[^/]+\/[^/]+\/./.test(c)) return { erreur: 'les sous-dossiers ne sont pas permis' };
@@ -337,6 +338,14 @@ function proposerFichier(fil, agent, projet, f, options = {}) {
     ajouter(fil, { de: 'proposition', agent, titre: `Fichier non enregistrable : ${String(f.chemin).split('/').pop().slice(0, 60)}`,
       texte: `> Le serveur n'a pas pu proposer ce fichier au studio : ${ok.erreur}. Son contenu est gardé ici. Demande à Claire de le reproposer sous un nom permis.\n\n${f.contenu.slice(0, MAX_FICHIER)}` });
     return;
+  }
+  // Une vidéo : son code doit passer les garde-fous avant d'arriver au studio
+  if (/\.tsx$/.test(ok.relatif)) {
+    const verif = verifierComposition(f.contenu);
+    if (verif.erreur) {
+      ajouter(fil, { de: 'etape', agent, texte: `Vidéo refusée (${ok.relatif}) : ${verif.erreur}. Demande à Nino de corriger.`, alerte: true });
+      return;
+    }
   }
   // Un site ou une présentation passe d'abord à l'atelier de rendu (navigateur, critique, correction)
   if (/\.html$/.test(ok.relatif) && !options.final && TOURS >= 0 && !process.env.AGENCE_SANS_ATELIER) {
@@ -575,6 +584,18 @@ function lancer(fil, texte, visible = texte) {
     if (projet && aRendre.has(fil)) atelier(fil, projet);
   });
   p.stdin.end(texte);
+}
+
+// ---------- Vidéos ----------
+// Après la validation d'une composition, le serveur fabrique le MP4 à côté (projets/<projet>/<nom>.mp4)
+async function rendreVideoProjet(fil, projet, chemin) {
+  const source = path.join(racine, chemin);
+  const sortie = source.replace(/\.tsx$/, '.mp4');
+  ajouter(fil, { de: 'etape', agent: 'production', texte: `Vidéo en cours de fabrication : ${path.basename(sortie)} (quelques dizaines de secondes)` });
+  const r = await rendreVideo(source, sortie);
+  if (r.erreur) ajouter(fil, { de: 'etape', agent: 'production', texte: `La vidéo n'a pas pu être fabriquée : ${r.erreur}`, alerte: true });
+  else ajouter(fil, { de: 'etape', agent: 'production', texte: `Vidéo prête : projets/${projet}/${path.basename(sortie)} (${Math.round(r.duree)} s)` });
+  diffuser({ type: 'projets', projets: listerProjets() });
 }
 
 // ---------- Git (seulement pour « Envoyer sur GitHub ») ----------
@@ -909,6 +930,7 @@ async function traiter(req, res) {
     sauver();
     maj(fil, m);
     diffuser({ type: 'projets', projets: listerProjets() });
+    if (m.statut === 'valide' && /\.tsx$/.test(m.chemin)) rendreVideoProjet(fil, projet, m.chemin);
     // L'agence le saura au prochain message
     const c = conv(fil);
     (c.studio ||= []).push(`${m.chemin} ${m.statut === 'valide' ? 'validé et enregistré' : 'refusé par Evan, rien écrit'}`);
