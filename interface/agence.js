@@ -567,6 +567,13 @@ async function lireFichier(nom) {
       bas: '<button class="bouton" data-a="fermer">Fermer</button>' });
     return chargerApercu(w, { projet: E.projet, nom });
   }
+  if (/\.mp4$/.test(nom)) {
+    const adresse = `/api/video?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(nom)}&jeton=${JETON}`;
+    fenetre({ cle: 'lire:' + E.projet + '/' + nom, agentId: 'motion', titre: nom, sous: `projets/${E.projet}/`, largeur: 680,
+      html: `<p class="chemin">projets/${esc(E.projet)}/${esc(nom)}</p><video class="lecteur-video" controls playsinline preload="metadata" src="${adresse}" aria-label="Vidéo du projet"></video>`,
+      bas: '<button class="bouton" data-a="fermer">Fermer</button>' });
+    return;
+  }
   try {
     const { contenu } = await api(`/api/fichier?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(nom)}`);
     fenetre({ cle: 'lire:' + E.projet + '/' + nom, agentId: 'production', titre: nom, sous: `projets/${E.projet}/`, html: `<div class="md">${md(contenu)}</div>`, bas: '<button class="bouton" data-a="fermer">Fermer</button>', largeur: 680 });

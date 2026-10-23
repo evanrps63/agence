@@ -799,6 +799,18 @@ async function traiter(req, res) {
       return res.end(fs.readFileSync(f));
     } catch { return envoyer(res, 404, { erreur: 'introuvable' }); }
   }
+  // La vidéo fabriquée par le serveur (projets/<projet>/<nom>.mp4), lue par le lecteur du studio
+  if (req.method === 'GET' && url.pathname === '/api/video') {
+    const d = dossierProjet(url.searchParams.get('projet'));
+    const nom = url.searchParams.get('nom') || '';
+    if (!d || !/^[a-z0-9][a-z0-9_-]{0,59}\.mp4$/.test(nom)) return envoyer(res, 400, { erreur: 'vidéo invalide' });
+    const f = path.join(d, nom);
+    try {
+      if (fs.lstatSync(f).isSymbolicLink()) throw 0;
+      res.writeHead(200, { 'Content-Type': 'video/mp4', ...SECURITE });
+      return res.end(fs.readFileSync(f));
+    } catch { return envoyer(res, 404, { erreur: 'introuvable' }); }
+  }
   if (req.method === 'GET' && url.pathname === '/api/fichier') {
     const projet = url.searchParams.get('projet'), nom = url.searchParams.get('nom');
     const d = dossierProjet(projet);
