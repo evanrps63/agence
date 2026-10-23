@@ -35,3 +35,8 @@ Les sources donnent des totaux qui ne concordent pas (par exemple 13, 18, 45 ou 
 Chaque campagne analysée a sa fiche dans `docs/campagnes/`, avec le brief, l'insight, la stratégie, l'idée, le dispositif, les résultats déclarés et ce qu'il faut retenir.
 
 - [Le Mal aimé (Intermarché)](docs/campagnes/loup-intermarche.md)
+- [Old Spice « The Man Your Man Could Smell Like » (2010)](docs/campagnes/old-spice-smell-like-a-man.md)
+- [Dove « Real Beauty Sketches » (2013)](docs/campagnes/dove-real-beauty-sketches.md)
+- [Always « #LikeAGirl » (2014)](docs/campagnes/always-likeagirl.md)
+- [adidas Originals « Original Forever » × Oasis (2025-2026)](docs/campagnes/adidas-original-forever-oasis.md)
+- [The Final Copy of Ilon Specht (L'Oréal Paris, 2025)](docs/campagnes/loreal-final-copy-ilon-specht.md)
