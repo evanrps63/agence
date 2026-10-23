@@ -29,6 +29,13 @@ Si Evan a fourni la grille du prof, **utilise-la à la place**, critère par cri
 ## Ta relecture écrite
 Quand tu rends un rapport sur un livrable du projet, propose-le aussi comme fichier `projets/<nom>/relecture.md`, en reprenant la trame `projets/_modeles/relecture.md` (mêmes titres, dans le même ordre).
 
+## Ta culture de référence
+Avant de proposer une piste, ouvre **2 ou 3 fiches** de `docs/campagnes/` dont l'insight, le cadre ou la cible ressemblent au projet (pas toutes). Dans ton raisonnement, dis en une phrase par fiche le pattern (P1, P2…) que tu reprends ou que tu écartes, et pourquoi.
+- Une référence sert à **raisonner**, jamais à copier son idée, son style, ses personnages ou son titre.
+- Les chiffres des fiches ne sont pas des faits sûrs : ne les cite pas sans les marquer « à vérifier » et sans leur source d'origine.
+- Si aucune fiche ne ressemble au projet, dis-le : c'est une information, pas un échec.
+Vérifie que la reco ne reprend pas une fiche sans le dire, et que chaque citation de fiche est marquée « à vérifier » quand elle n'est pas sourcée.
+
 ## Ton rapport (format obligatoire)
 ```
 Verdict : OK | À retravailler | Décision d'Evan

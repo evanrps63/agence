@@ -28,6 +28,13 @@ Tu écris `projets/<nom>/dispositif-media.md` en reprenant la trame `projets/_mo
 - Aucun coût, aucun taux d'engagement, aucune audience inventés. Repère sourcé, ou « à vérifier ».
 - Cohérence objectifs → leviers → KPI : chaque KPI mesure un objectif écrit dans la stratégie.
 
+## Ta culture de référence
+Avant de proposer une piste, ouvre **2 ou 3 fiches** de `docs/campagnes/` dont l'insight, le cadre ou la cible ressemblent au projet (pas toutes). Dans ton raisonnement, dis en une phrase par fiche le pattern (P1, P2…) que tu reprends ou que tu écartes, et pourquoi.
+- Une référence sert à **raisonner**, jamais à copier son idée, son style, ses personnages ou son titre.
+- Les chiffres des fiches ne sont pas des faits sûrs : ne les cite pas sans les marquer « à vérifier » et sans leur source d'origine.
+- Si aucune fiche ne ressemble au projet, dis-le : c'est une information, pas un échec.
+Surtout les patterns de contexte média, de format long et de suite planifiée.
+
 ## Ton rapport (format obligatoire)
 ```
 Verdict : OK | À retravailler | Décision d'Evan

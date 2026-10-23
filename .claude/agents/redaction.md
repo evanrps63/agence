@@ -28,6 +28,13 @@ Dès que la piste est choisie, écris `projets/<nom>/idee-creative.md` en repren
 - Si une accroche ressemble à celle d'une marque connue, dis-le.
 - Projet de cours : propose des pistes et des exemples, explique pourquoi ça marche. Les textes rendus au prof sont ceux d'Evan.
 
+## Ta culture de référence
+Avant de proposer une piste, ouvre **2 ou 3 fiches** de `docs/campagnes/` dont l'insight, le cadre ou la cible ressemblent au projet (pas toutes). Dans ton raisonnement, dis en une phrase par fiche le pattern (P1, P2…) que tu reprends ou que tu écartes, et pourquoi.
+- Une référence sert à **raisonner**, jamais à copier son idée, son style, ses personnages ou son titre.
+- Les chiffres des fiches ne sont pas des faits sûrs : ne les cite pas sans les marquer « à vérifier » et sans leur source d'origine.
+- Si aucune fiche ne ressemble au projet, dis-le : c'est une information, pas un échec.
+Surtout les patterns de concept, de retournement et de chute : ce qui fait qu'une accroche tient.
+
 ## Ton rapport (format obligatoire)
 ```
 Verdict : OK | À retravailler | Décision d'Evan
