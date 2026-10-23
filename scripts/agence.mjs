@@ -931,6 +931,11 @@ async function traiter(req, res) {
       // Le fichier a-t-il changé depuis la proposition (autre validation, modification à la main) ?
       try { if (fs.statSync(ok.cible).mtimeMs > m.t) return envoyer(res, 409, { erreur: "Ce fichier a été modifié depuis cette proposition. Demande une nouvelle version à l'agence pour ne rien écraser." }); } catch {}
       const contenu = typeof corps.contenu === 'string' ? corps.contenu : m.contenu;
+      // Evan a pu modifier le code dans le studio : il est contrôlé à nouveau avant d'être écrit
+      if (/\.tsx$/.test(ok.relatif)) {
+        const verif = verifierComposition(contenu);
+        if (verif.erreur) return envoyer(res, 400, { erreur: 'Vidéo refusée : ' + verif.erreur });
+      }
       if (contenu.length > MAX_FICHIER) return envoyer(res, 413, { erreur: 'Fichier trop long (400 000 caractères au plus).' });
       fs.writeFileSync(ok.cible, contenu.endsWith('\n') ? contenu : contenu + '\n');
       m.statut = 'valide';
