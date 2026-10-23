@@ -125,8 +125,8 @@ function avatar(id, taille = 36) {
 function enAttente() {
   return messages(filAgence()).filter(m => m.de === 'fichier' && m.statut === 'attente').length;
 }
-// Jade et Nino travaillent au poste du Studio (le décor n'a pas de place libre pour un troisième bureau)
-const POSTE = { digital: 'production', motion: 'production' };
+// Chaque agent a son bureau dans les locaux (Jade et Nino au Studio)
+const POSTE = {};
 function poste(id) { return document.querySelector(`.locaux [data-agent="${CSS.escape(POSTE[id] || id)}"]`); }
 // Ajuste les pastilles et les bulles à la largeur de leur texte
 function ajusterEtiquette(e) {
@@ -720,7 +720,6 @@ $('#texte').addEventListener('keydown', ev => {
 });
 $('#texte').addEventListener('input', ajusterSaisie);
 $('#choix-projet').addEventListener('change', ev => changerProjet(ev.target.value));
-addEventListener('resize', () => { for (const b of document.querySelectorAll('.bulle')) b.remove(); });
 $('#voile').addEventListener('click', () => fermer(document.querySelector('.fenetre[data-modale]')));
 
 // ---------- Le direct ----------

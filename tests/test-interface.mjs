@@ -31,10 +31,15 @@ try {
   const capture = nom => page.screenshot({ path: path.join(CAPTURES, nom + '.png') });
 
   console.log('Les locaux');
-  verifier(await page.$$eval('.locaux [data-agent]', l => new Set(l.map(x => x.dataset.agent)).size) === 9, '8 agents et le studio ont leur bureau');
+  const bureaux = await page.$$eval('.locaux [data-agent]', l => [...new Set(l.map(x => x.dataset.agent))]);
+  verifier(bureaux.length === 11 && bureaux.includes('digital') && bureaux.includes('motion'), '10 agents et le studio ont leur bureau, dont Jade et Nino');
   const enseignes = await page.$eval('.locaux', l => l.textContent);
   verifier(['BUREAU DU PLANNING', 'SALLE DE CRÉA', 'OPEN SPACE', 'SALLE DU BRIEF', 'STUDIO'].every(n => enseignes.includes(n)), 'les 5 pièces de l\'agence');
   verifier(await page.$eval('.locaux [data-agent="planning"]', p => p.textContent.includes('Max')), 'Max est à son poste, avec son prénom');
+  // Changer la taille de la fenêtre ne doit pas faire disparaître les bulles des agents
+  await page.setViewport({ width: 1300, height: 860 });
+  await page.setViewport({ width: 1440, height: 900 });
+  verifier(await page.$$eval('.locaux [data-agent] .bulle', l => l.length) === 11, 'les bulles des agents restent après un changement de taille de la fenêtre');
   verifier(await page.$$eval('#circuit li', l => l.length) === 8, 'le circuit a 8 étapes');
   verifier(await page.$eval('#fil', f => f.textContent.includes('Bonjour patron')), 'accueil vide honnête');
   await capture('1-accueil-clair');
