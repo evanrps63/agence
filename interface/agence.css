@@ -119,10 +119,7 @@ button, select, textarea { font: inherit; color: inherit; }
 .ecrit-noir { font: 800 .13px var(--police); fill: #2f2c3a; }
 .diapo-titre { font: 800 .14px var(--police); fill: #ffffff; letter-spacing: .01px; }
 .diapo { font: 700 .13px var(--police); fill: #3a3646; }
-.ecran-txt { font: 800 .1px var(--police); fill: #3a3646; }
 .affiche { font: 800 .14px var(--police); fill: #ffffff; text-anchor: middle; }
-.trace-dossier { fill: none; stroke: #e2a92a; stroke-width: 2.2; stroke-dasharray: 2 6; stroke-linecap: round; opacity: .9; animation: trace 1.4s linear infinite; }
-@keyframes trace { to { stroke-dashoffset: -16; } }
 .ombre-batiment { fill: var(--ombre-bat); opacity: .07; filter: blur(10px); }
 
 /* ---------- étiquettes des personnes ---------- */
@@ -245,7 +242,6 @@ button, select, textarea { font: inherit; color: inherit; }
 :root:not([data-theme=light]) .reflet { opacity: .06; }
 :root:not([data-theme=light]) .logo-portable { filter: drop-shadow(0 0 2px rgba(255,255,255,.9)); }
 :root:not([data-theme=light]) .vapeur path { stroke: #d9d4ef; }
-:root:not([data-theme=light]) .trace-dossier { stroke: #f0b43a; }
 :root:not([data-theme=light]) .ombre-batiment { opacity: .5; }
 :root:not([data-theme=light]) .etiquette .pastille { filter: drop-shadow(0 2px 0 rgba(0,0,0,.4)); }
 }
@@ -257,7 +253,6 @@ button, select, textarea { font: inherit; color: inherit; }
 :root[data-theme=dark] .reflet { opacity: .06; }
 :root[data-theme=dark] .logo-portable { filter: drop-shadow(0 0 2px rgba(255,255,255,.9)); }
 :root[data-theme=dark] .vapeur path { stroke: #d9d4ef; }
-:root[data-theme=dark] .trace-dossier { stroke: #f0b43a; }
 :root[data-theme=dark] .ombre-batiment { opacity: .5; }
 :root[data-theme=dark] .etiquette .pastille { filter: drop-shadow(0 2px 0 rgba(0,0,0,.4)); }
 
@@ -386,10 +381,6 @@ button, select, textarea { font: inherit; color: inherit; }
 .agent.parle .bulle { opacity: 1; visibility: visible; }
 .dossier-vol { opacity: 0; transition: transform .9s cubic-bezier(.5, 0, .2, 1), opacity .3s; pointer-events: none; }
 .dossier-vol.visible { opacity: 1; }
-.agent .compteur { display: none; }
-.agent.attend .compteur { display: inline; }
-.compteur circle { fill: var(--orange); }
-.compteur text { font: 800 11px var(--police); fill: #fff; text-anchor: middle; }
 
 .menu-poste { position: fixed; z-index: 60; background: var(--carte); border: 1px solid var(--trait); border-radius: 14px; box-shadow: 0 3px 0 var(--relief), 0 16px 32px -12px rgba(30, 24, 70, .35); padding: 6px; min-width: 230px; }
 .menu-poste .entete { display: flex; align-items: center; gap: 10px; padding: 6px 8px 9px; border-bottom: 1px solid var(--trait); margin-bottom: 4px; }
