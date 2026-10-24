@@ -793,6 +793,7 @@ function recevoir(evt) {
 async function charger() {
   const e = await api('/api/etat');
   Object.assign(E, { equipe: e.equipe, pilote: e.pilote, projets: e.projets, fils: e.fils, enCours: new Set(e.enCours), pret: e.pret, github: e.github });
+  if (e.consultation) toast('Mode consultation : aucun agent ne tournera. Le suivi, les fiches et les vidéos restent là.', 6000);
   E.actifs = new Map(Object.entries(e.actifs || {}).map(([f, l]) => [f, new Set(l)]));
   if (E.projet && !E.projets.some(p => p.slug === E.projet)) E.projet = null;
   if (!estAgence(E.fil) && !E.equipe.some(a => a.id === E.fil)) E.fil = filAgence();

@@ -129,6 +129,8 @@ const aide = (() => { try { return spawnSync(CLAUDE, ['--help'], { encoding: 'ut
 const connu = o => aide.includes(o);
 const RESTREINT = connu('--restricted');
 const PROTEGE = RESTREINT;
+// Mode consultation (npm run agence -- --consulter) : le suivi, les fiches et les vidéos restent accessibles, mais aucun agent ne se lance
+const CONSULTATION = process.argv.includes('--consulter') || process.env.AGENCE_CONSULTER === '1';
 const TROP_ANCIEN = "Claude Code est absent ou trop ancien pour l'agence : tape « claude update » dans le Terminal, puis relance l'agence.";
 
 // ---------- Projets ----------
@@ -786,7 +788,7 @@ async function traiter(req, res) {
     const equipe = AGENTS.map(a => ({ id: a, prenom: DEFS[a].prenom, poste: DEFS[a].poste, piece: DEFS[a].piece, couleur: DEFS[a].couleur, description: DEFS[a].description, web: DEFS[a].tools.includes('WebSearch'), model: DEFS[a].model }));
     const fils = {};
     for (const [f, c] of Object.entries(conversations)) fils[f] = { messages: c.messages, cout: c.cout || 0 };
-    return envoyer(res, 200, { equipe, pilote: PILOTE, projets: listerProjets(), fils, enCours: [...enCours.keys()], actifs: actifs(), pret: PROTEGE, github: !!(await depot()), navigateur: !!trouverChrome() });
+    return envoyer(res, 200, { equipe, pilote: PILOTE, projets: listerProjets(), fils, enCours: [...enCours.keys()], actifs: actifs(), consultation: CONSULTATION, pret: PROTEGE, github: !!(await depot()), navigateur: !!trouverChrome() });
   }
   if (req.method === 'GET' && url.pathname === '/api/image') {
     const d = dossierProjet(url.searchParams.get('projet'));
@@ -876,6 +878,9 @@ async function traiter(req, res) {
     }
     if (!dossierProjet(corps.projet) || !/^[a-z0-9][a-z0-9_-]{0,59}\.html$/.test(corps.nom || '')) return envoyer(res, 400, { erreur: 'aperçu impossible' });
     return envoyer(res, 200, { adresse: '/apercu/' + cleApercu({ projet: corps.projet, nom: corps.nom }) + '/' });
+  }
+  if (CONSULTATION && ['/api/brief', '/api/message', '/api/choisir'].includes(url.pathname)) {
+    return envoyer(res, 423, { erreur: 'Mode consultation : aucun agent ne tourne. Relance l\'agence sans --consulter pour travailler avec l\'équipe.' });
   }
   if (url.pathname === '/api/brief') {
     const nom = typeof corps.nom === 'string' ? corps.nom.trim().slice(0, 80) : '';

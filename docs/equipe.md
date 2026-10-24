@@ -83,6 +83,10 @@ C'est la liste des sources que tu as déjà vérifiées (le lien ouvert, le chif
 6. **Une petite demande** : clique sur un bureau, puis « Écrire à… ». Ou passe par l'accueil du « Nouveau brief », qui t'oriente vers le bon agent.
 7. **Envoyer sur GitHub** : seulement quand tu cliques, et seulement le dossier du projet ouvert.
 
+## Le mode consultation (sans coût)
+
+Pour regarder le suivi, la Culthèque et les vidéos sans lancer aucun agent : `npm run agence -- --consulter`. Dans ce mode, un nouveau brief, un message dans le chat et un choix sont refusés : aucun agent ne tourne, donc rien ne se dépense.
+
 ## Les sites et présentations (Jade)
 
 - Demande-la dans le chat : « Jade, fais la présentation de la reco » ou « fais une landing page pour la campagne ». Ou clique sur le studio, puis « Écrire à Jade ».
