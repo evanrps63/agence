@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "agence": "node scripts/agence.mjs",
-    "test": "node tests/lancer.mjs"
+    "test": "node tests/lancer.mjs",
+    "couts": "node scripts/couts.mjs"
   },
   "dependencies": {
     "@remotion/bundler": "^4.0.538",
