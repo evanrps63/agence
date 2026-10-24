@@ -40,3 +40,4 @@ Chaque campagne analysée a sa fiche dans `docs/campagnes/`, avec le brief, l'in
 - [Always « #LikeAGirl » (2014)](docs/campagnes/always-likeagirl.md)
 - [adidas Originals « Original Forever » × Oasis (2025-2026)](docs/campagnes/adidas-original-forever-oasis.md)
 - [The Final Copy of Ilon Specht (L'Oréal Paris, 2025)](docs/campagnes/loreal-final-copy-ilon-specht.md)
+- [On s'habitue vite à la classe Ulys (Vinci Autoroutes, Buzzman, 2024)](docs/campagnes/ulys-vinci-autoroutes.md)
