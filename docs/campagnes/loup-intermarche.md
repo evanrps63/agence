@@ -20,6 +20,8 @@ captures: docs/campagnes/captures/loup-intermarche/ (plans 01 à 10, palettes)
 
 # Campagne de référence — Intermarché « Le Mal-Aimé » (Noël 2025)
 
+> Statut : fiche transmise par Evan, construite à partir de sources citées (presse, bilan de La Réclame). Les faits ne sont pas contrôlés un par un : à vérifier avant de citer.
+
 ## 0. Comment utiliser ce fichier (instructions pour l'agent)
 
 Ce fichier est une **fiche de campagne de référence** pour la base de données de l'agence.

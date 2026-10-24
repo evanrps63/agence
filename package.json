@@ -7,7 +7,8 @@
   "scripts": {
     "agence": "node scripts/agence.mjs",
     "test": "node tests/lancer.mjs",
-    "couts": "node scripts/couts.mjs"
+    "couts": "node scripts/couts.mjs",
+    "fiches": "node scripts/verifier-fiches.mjs"
   },
   "dependencies": {
     "@remotion/bundler": "^4.0.538",
