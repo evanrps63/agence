@@ -12,13 +12,13 @@ objectif: donner une valeur émotionnelle à un badge de télépéage, et faire 
 cibles: [automobilistes qui utilisent les autoroutes]
 leviers: [humour, plaisir, comparaison, rivalité]
 tags: [humour, télépéage, Effie, Grand Prix, média]
-resultats_cles: "Grand Prix Effie France 2024 (annoncé le 25 novembre 2024). Ventes de badges en hausse d'environ 30 % en 2023, notoriété en hausse de 23 points (selon les sources, à vérifier)"
+resultats_cles: "Grand Prix Effie France 2024 et Effie Or (catégorie Mobilités). Ventes de badges +30 % en 2023 (données internes d'Ulys). Notoriété assistée +23 points en quelques mois"
 captures: aucune
 ---
 
 # Campagne de référence : « On s'habitue vite à la classe Ulys » (Vinci Autoroutes, 2024)
 
-> Statut : fiche construite à partir de résumés de presse (La Réclame, The Media Leader, CB News). Les faits ne sont pas encore contrôlés un par un : à vérifier avant de citer.
+> Statut : faits de la section 6 vérifiés sur le site officiel des Effie France (palmarès 2024), transmis par Evan le 24 octobre 2026. Le chiffre des ventes vient des données internes de la marque, non auditées.
 
 ## 0. Comment utiliser ce fichier (instructions pour l'agent)
 - Fiche de **référence de raisonnement** : un produit utilitaire rendu désirable par l'humour, plutôt que par la fonction.
@@ -31,6 +31,7 @@ captures: aucune
 | Annonceur | Vinci Autoroutes, avec le badge Ulys |
 | Problème | Ulys est le leader du marché des badges de télépéage, mais le service n'a pas de valeur émotionnelle. |
 | Objectif | Donner une dimension émotionnelle au badge et faire progresser les ventes. |
+| Annonceur | Vinci Autoroutes – Ulys (site Effie) |
 
 ## 2. Insight et stratégie
 - **Insight** : le plaisir de passer avant tout le monde à la barrière de péage.
@@ -46,11 +47,13 @@ captures: aucune
 - Médias : TV, affichage, digital, radio, selon The Media Leader.
 - Achat média : Havas Media France.
 
-## 6. Résultats (à vérifier)
-- Grand Prix Effie France 2024.
-- Ventes de badges en hausse d'environ 30 % en 2023 (source : CB News).
-- Notoriété en hausse de 23 points (source : CB News).
-- La cérémonie est organisée par l'AACC et l'Union des marques. 38 campagnes en shortlist, 12 Gold Effie.
+## 6. Résultats (vérifiés sur le site des Effie France)
+- Date d'annonce du Grand Prix : 25 novembre 2024, au soir (communiqué sous embargo jusqu'à 21 h 30).
+- Grand Prix Effie France 2024, et Effie Or dans la catégorie Mobilités.
+- Hausse des ventes de badges : +30 % en 2023, selon les données internes d'Ulys.
+- Hausse de notoriété : +23 points de notoriété assistée, en quelques mois.
+- Agence de création : Buzzman. Agence média : Havas Media France.
+- Palmarès Effie France 2024 : 38 campagnes, dont 12 récompensées par un Effie Or.
 
 ## 7. Patterns réutilisables
 | # | Pattern | Description | Quand l'utiliser |
@@ -59,10 +62,11 @@ captures: aucune
 | P4 | Contexte précis | S'appuyer sur un moment vécu par la cible (le passage au péage). | Campagne ancrée dans un usage quotidien |
 
 ## 8. Limites
-- Résultats déclarés par la marque ou la presse, non audités.
+- Les ventes (+30 %) viennent des données internes d'Ulys : elles ne sont pas auditées.
 - Peu d'informations sur la direction artistique dans les sources consultées.
 
 ## 9. Sources
+- Site officiel des Effie France, palmarès 2024 (fiche Vinci Autoroutes – Ulys) : à compléter avec le lien exact.
 - La Réclame, Effie France 2024 : https://lareclame.fr/effie-awards-france-2024-union-des-marques-buzzman-ulys-resultats-306896
 - The Media Leader, Grand Prix Effie France 2024 : https://fr.themedialeader.com/la-campagne-orchestree-par-havas-media-france-pour-vinci-autoroutes-est-elue-grand-prix-effie-france-2024/
 - CB News, image de la campagne : https://www.cbnews.fr/marques/image-campagne-on-s-habitue-vite-classe-ulys-buzzman-avec-havas-media-france-remporte-grand
