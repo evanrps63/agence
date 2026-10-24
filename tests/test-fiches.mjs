@@ -3,7 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { verifierFiches } from '../scripts/verifier-fiches.mjs';
-import { verifier, bilan, code } from './outils.mjs';
+import { demarrer, verifier, bilan, code } from './outils.mjs';
 
 console.log('La base réelle');
 const reelle = verifierFiches();
@@ -25,4 +25,15 @@ verifier(!r.erreurs.some(e => /avec-statut/.test(e)), 'une fiche avec statut n\'
 verifier(r.erreurs.some(e => /lien cassé dans l'index : docs\/campagnes\/inexistante\.md/.test(e)), 'un lien cassé dans l\'index est signalé (chemin relatif au dépôt)');
 verifier(r.fiches === 2, 'la synthèse n\'est pas comptée comme une fiche');
 fs.rmSync(racine, { recursive: true, force: true });
+console.log('La Culthèque');
+const a = await demarrer();
+try {
+  fs.cpSync(path.join(code, 'docs', 'campagnes'), path.join(a.racine, 'docs', 'campagnes'), { recursive: true });
+  const liste = await fetch(a.base + '/api/campagnes', { headers: { 'X-Jeton': a.jeton } }).then(r => r.json());
+  verifier(liste.fiches.length >= 20 && liste.fiches.every(f => f.nom.endsWith('.md') && f.titre), 'la Culthèque liste les fiches avec leur titre');
+  const lue = await fetch(a.base + '/api/campagne?nom=ulys-vinci-autoroutes.md', { headers: { 'X-Jeton': a.jeton } });
+  verifier(lue.status === 200 && (await lue.json()).contenu.includes('Effie'), 'une fiche s\'ouvre avec son contenu');
+  verifier((await fetch(a.base + '/api/campagne?nom=..%2Fsecret.md', { headers: { 'X-Jeton': a.jeton } })).status === 400, 'un chemin qui sort du dossier est refusé');
+  verifier((await fetch(a.base + '/api/campagnes')).status === 403, 'sans jeton, la Culthèque est refusée');
+} catch (e) { verifier(false, 'exception : ' + e.stack); } finally { a.arreter(); }
 bilan();

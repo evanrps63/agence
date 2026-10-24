@@ -507,6 +507,25 @@ async function fenetreDossier() {
     bas: '<button class="bouton" data-a="fermer">Fermer</button>'
   });
 }
+// La Culthèque : les fiches de campagnes de référence, lisibles depuis l'agence
+async function fenetreCultheque() {
+  let fiches = [];
+  try { ({ fiches } = await api('/api/campagnes')); } catch (e) { toast(e.message); return; }
+  fenetre({
+    cle: 'cultheque', agentId: 'production', titre: 'Culthèque', sous: 'Les campagnes de référence de l\'agence', largeur: 640,
+    html: fiches.length
+      ? `<div class="liste-fichiers">${fiches.map(f => `<button data-a="lire-campagne" data-v="${esc(f.nom)}">${esc(f.titre)}</button>`).join('')}</div>`
+      : '<p>Aucune fiche pour l\'instant.</p>',
+    bas: '<button class="bouton" data-a="fermer">Fermer</button>'
+  });
+}
+async function lireCampagne(nom) {
+  try {
+    const { contenu } = await api(`/api/campagne?nom=${encodeURIComponent(nom)}`);
+    fenetre({ cle: 'campagne:' + nom, agentId: 'production', titre: nom.replace(/\.md$/, ''), sous: 'docs/campagnes/', largeur: 680,
+      html: `<div class="md">${md(contenu)}</div>`, bas: '<button class="bouton" data-a="fermer">Fermer</button>' });
+  } catch (e) { toast(e.message); }
+}
 // Le suivi : pour chaque projet, l'étape en cours, la date de rendu et le coût (calculés par le serveur)
 function fenetreSuivi() {
   const date = d => /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : d;
@@ -609,6 +628,8 @@ document.addEventListener('click', async ev => {
     case 'circuit': jouerCircuit(); break;
     case 'dossier': document.querySelector('.menu-poste')?.remove(); fenetreDossier(); break;
     case 'suivi': document.querySelector('.menu-poste')?.remove(); fenetreSuivi(); break;
+    case 'cultheque': document.querySelector('.menu-poste')?.remove(); fenetreCultheque(); break;
+    case 'lire-campagne': lireCampagne(v); break;
     case 'suivre': fermer(w); changerProjet(v); break;
     case 'lire': lireFichier(v); break;
     case 'fermer': fermer(w); break;

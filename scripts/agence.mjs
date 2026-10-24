@@ -799,6 +799,27 @@ async function traiter(req, res) {
       return res.end(fs.readFileSync(f));
     } catch { return envoyer(res, 404, { erreur: 'introuvable' }); }
   }
+  // La Culthèque : les fiches de campagnes (docs/campagnes/), lecture seule
+  if (req.method === 'GET' && url.pathname === '/api/campagnes') {
+    const d = path.join(racine, 'docs', 'campagnes');
+    let noms = [];
+    try { noms = fs.readdirSync(d).filter(n => /^[a-z0-9][a-z0-9-]{0,80}\.md$/.test(n)).sort(); } catch {}
+    const fiches = noms.map(nom => {
+      const texte = fs.readFileSync(path.join(d, nom), 'utf8');
+      const titre = (texte.split('\n').find(l => /^#\s/.test(l)) || nom).replace(/^#\s*/, '').replace(/\*\*/g, '').slice(0, 160);
+      return { nom, titre };
+    });
+    return envoyer(res, 200, { fiches });
+  }
+  if (req.method === 'GET' && url.pathname === '/api/campagne') {
+    const nom = url.searchParams.get('nom') || '';
+    if (!/^[a-z0-9][a-z0-9-]{0,80}\.md$/.test(nom)) return envoyer(res, 400, { erreur: 'fiche invalide' });
+    try {
+      const f = path.join(racine, 'docs', 'campagnes', nom);
+      if (fs.lstatSync(f).isSymbolicLink()) throw 0;
+      return envoyer(res, 200, { contenu: fs.readFileSync(f, 'utf8') });
+    } catch { return envoyer(res, 404, { erreur: 'fiche introuvable' }); }
+  }
   // La vidéo fabriquée par le serveur (projets/<projet>/<nom>.mp4), lue par le lecteur du studio
   if (req.method === 'GET' && url.pathname === '/api/video') {
     const d = dossierProjet(url.searchParams.get('projet'));
