@@ -43,9 +43,13 @@ captures: aucune
 ## 4. Direction artistique
 - Non renseignée dans les sources consultées (à compléter avec des visuels).
 
-## 5. Diffusion
-- Médias : TV, affichage, digital, radio, selon The Media Leader.
-- Achat média : Havas Media France.
+## 5. Diffusion et répartition (vérifiés sur le site des Effie France)
+- **Télévision** : diffusion nationale, pour installer le positionnement de la marque.
+- **Affichage** : renforcer la présence de la marque, et déconstruire les idées reçues sur l'abonnement.
+- **Digital** : prolonger la visibilité de la campagne.
+- **Radio** : toucher les automobilistes pendant leurs trajets.
+- **CRM et application Ulys** : relayer les offres, favoriser l'acquisition et le cross-selling.
+- Agences : 24 agences associées aux 38 campagnes du palmarès (LLLLITL). Buzzman et TBWA sont ex æquo au titre d'Agence Effie France de l'année 2024.
 
 ## 6. Résultats (vérifiés sur le site des Effie France)
 - Date d'annonce du Grand Prix : 25 novembre 2024, au soir (communiqué sous embargo jusqu'à 21 h 30).
@@ -66,6 +70,7 @@ captures: aucune
 - Peu d'informations sur la direction artistique dans les sources consultées.
 
 ## 9. Sources
+- LLLLITL, palmarès Effie France 2024 (24 agences, Agence de l'année ex æquo) : à compléter avec le lien exact.
 - Site officiel des Effie France, palmarès 2024 (fiche Vinci Autoroutes – Ulys) : à compléter avec le lien exact.
 - La Réclame, Effie France 2024 : https://lareclame.fr/effie-awards-france-2024-union-des-marques-buzzman-ulys-resultats-306896
 - The Media Leader, Grand Prix Effie France 2024 : https://fr.themedialeader.com/la-campagne-orchestree-par-havas-media-france-pour-vinci-autoroutes-est-elue-grand-prix-effie-france-2024/
