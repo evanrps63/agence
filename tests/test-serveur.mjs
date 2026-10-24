@@ -38,7 +38,7 @@ try {
 
   console.log('État');
   const etat = (await api('/api/etat')).json;
-  verifier(etat.equipe.length === 9 && etat.equipe.some(e => e.id === 'digital' && e.prenom === 'Jade'), '9 agents dans l\'équipe, dont Jade au studio digital');
+  verifier(etat.equipe.length === 10 && etat.equipe.some(e => e.id === 'digital' && e.prenom === 'Jade') && etat.equipe.some(e => e.id === 'motion' && e.prenom === 'Nino'), '10 agents dans l\'équipe, dont Jade au studio digital et Nino au motion');
   verifier(etat.equipe.find(e => e.id === 'planning').prenom === 'Max', 'le prénom vient de la fiche de l\'agent');
   verifier(etat.pret === true && typeof etat.actifs === 'object', 'Claude Code reconnu, agents actifs donnés au chargement');
 
@@ -81,7 +81,7 @@ try {
   const garde = reglages.hooks.PreToolUse[0];
   verifier(garde.matcher === 'Agent|Task' && garde.hooks[0].command.includes('garde-agents.mjs') && garde.hooks[0].command.includes('jury'), 'le garde-fou des appels d\'agents est branché');
   const defs = JSON.parse(val('--agents'));
-  verifier(Object.keys(defs).length === 9 && defs.digital.model === 'opus' && !defs.redaction.tools.includes('WebSearch'), 'chaque agent garde ses outils');
+  verifier(Object.keys(defs).length === 10 && defs.digital.model === 'opus' && !defs.redaction.tools.includes('WebSearch'), 'chaque agent garde ses outils');
   verifier(val('--model') === 'sonnet' && defs.planning.model === 'opus' && defs.social.model === 'haiku', 'chaque agent travaille avec son modèle (Claire sonnet, Max opus, Sam haiku)');
   verifier(/Sois économe/.test(val('--append-system-prompt')), 'la consigne d\'économie est transmise');
   verifier(/projet de COURS/.test(val('--append-system-prompt')), 'la règle des projets de cours est transmise');

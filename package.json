@@ -6,9 +6,17 @@
   "type": "module",
   "scripts": {
     "agence": "node scripts/agence.mjs",
-    "test": "node tests/lancer.mjs"
+    "test": "node tests/lancer.mjs",
+    "couts": "node scripts/couts.mjs",
+    "fiches": "node scripts/verifier-fiches.mjs"
   },
   "dependencies": {
-    "puppeteer-core": "^25.12.0"
+    "@remotion/bundler": "^4.0.538",
+    "@remotion/cli": "^4.0.538",
+    "@remotion/renderer": "^4.0.538",
+    "puppeteer-core": "^25.12.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.538"
   }
 }

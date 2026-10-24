@@ -31,10 +31,15 @@ try {
   const capture = nom => page.screenshot({ path: path.join(CAPTURES, nom + '.png') });
 
   console.log('Les locaux');
-  verifier(await page.$$eval('.locaux [data-agent]', l => new Set(l.map(x => x.dataset.agent)).size) === 9, '8 agents et le studio ont leur bureau');
+  const bureaux = await page.$$eval('.locaux [data-agent]', l => [...new Set(l.map(x => x.dataset.agent))]);
+  verifier(bureaux.length === 11 && bureaux.includes('digital') && bureaux.includes('motion'), '10 agents et le studio ont leur bureau, dont Jade et Nino');
   const enseignes = await page.$eval('.locaux', l => l.textContent);
   verifier(['BUREAU DU PLANNING', 'SALLE DE CRÉA', 'OPEN SPACE', 'SALLE DU BRIEF', 'STUDIO'].every(n => enseignes.includes(n)), 'les 5 pièces de l\'agence');
   verifier(await page.$eval('.locaux [data-agent="planning"]', p => p.textContent.includes('Max')), 'Max est à son poste, avec son prénom');
+  // Changer la taille de la fenêtre ne doit pas faire disparaître les bulles des agents
+  await page.setViewport({ width: 1300, height: 860 });
+  await page.setViewport({ width: 1440, height: 900 });
+  verifier(await page.$$eval('.locaux [data-agent] .bulle', l => l.length) === 11, 'les bulles des agents restent après un changement de taille de la fenêtre');
   verifier(await page.$$eval('#circuit li', l => l.length) === 8, 'le circuit a 8 étapes');
   verifier(await page.$eval('#fil', f => f.textContent.includes('Bonjour patron')), 'accueil vide honnête');
   await capture('1-accueil-clair');
@@ -49,7 +54,7 @@ try {
   console.log('Nouveau brief');
   await page.click('.barre [data-a="nouveau-brief"]');
   await page.waitForSelector('#form-brief');
-  verifier(await page.$$eval('.orienter button', l => l.length) === 9, 'l\'accueil propose d\'aller au bon bureau');
+  verifier(await page.$$eval('.orienter button', l => l.length) === 10, 'l\'accueil propose d\'aller au bon bureau');
   await attendre(400);
   await capture('3-nouveau-brief');
   await page.type('#form-brief [name=nom]', 'Oasis été 2027');
@@ -163,6 +168,16 @@ try {
   await page.click('.barre [data-a="dossier"]');
   await page.waitForSelector('.liste-fichiers');
   verifier(await page.$$eval('.liste-fichiers button', l => l.map(b => b.textContent).join()) === 'brief.md,insights.md,presentation.html,reco.md', 'le dossier liste les fichiers du projet');
+
+  console.log('Suivi des projets');
+  await page.keyboard.press('Escape');
+  await page.click('button[data-a="suivi"]');
+  await page.waitForSelector('.suivi-ligne');
+  const suivis = await page.$$eval('.suivi-ligne', l => l.map(b => b.textContent).join('|'));
+  verifier(/Étape en cours : Stratégie/.test(suivis), 'le suivi donne l\'étape en cours de chaque projet');
+  await page.click('.suivi-ligne');
+  await page.waitForFunction(() => !document.querySelector('.fenetre[data-cle="suivi"]'));
+  verifier(await page.$eval('#choix-projet', s => s.value) !== '', 'cliquer sur un projet l\'ouvre');
 
   console.log('Sombre et téléphone');
   await page.keyboard.press('Escape');

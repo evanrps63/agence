@@ -33,7 +33,7 @@ Un **fichier HTML unique et autonome**, proposé avec un bloc FICHIER (il arrive
 <!doctype html>…
 FICHIER>>>
 ```
-Noms : `presentation.html` pour une présentation, `site.html` pour un site ou une landing page (ou un nom court en minuscules, sans accent).
+Noms : `presentation.html` pour une présentation, `site.html` pour un site ou une landing page (ou un nom court en minuscules, sans accent). **Toujours `.html`, jamais `.md`** : Evan ne voit l'aperçu que pour un fichier HTML.
 
 ### Règles techniques
 - Tout dans le fichier : CSS dans `<style>`, JavaScript dans `<script>`, illustrations en SVG dessinées par toi. **Aucune image prise sur internet ni photo de banque d'images.**

@@ -22,7 +22,7 @@ const ORIENTER = [
   ['redaction', 'Une accroche, un slogan'], ['etudes', 'Des chiffres, un benchmark'],
   ['planning', 'Une question de méthode'], ['jury', 'Faire relire un travail'],
   ['social', 'Une idée de post'], ['media', 'Un budget, des KPI'],
-  ['direction-artistique', 'Une piste visuelle'], ['digital', 'Un site, une présentation'], ['clientele', 'Je ne sais pas à qui demander']
+  ['direction-artistique', 'Une piste visuelle'], ['digital', 'Un site, une présentation'], ['motion', 'Une vidéo, un storyboard'], ['clientele', 'Je ne sais pas à qui demander']
 ];
 
 // ---------- Outils ----------
@@ -118,14 +118,15 @@ const apercu = t => String(t || '').replace(/[#*`>|_]/g, '').replace(/\s+/g, ' '
 
 // ---------- Avatars (dessinés dans la page : symboles #av-<agent>) ----------
 function avatar(id, taille = 36) {
-  return `<svg class="avatar" width="${taille}" height="${taille}" aria-hidden="true"><use href="#av-${esc(POSTE[id] || id)}"/></svg>`;
+  return `<svg class="avatar" width="${taille}" height="${taille}" aria-hidden="true"><use href="#av-${esc(id)}"/></svg>`;
 }
 
 // ---------- Les locaux (décor isométrique, une personne = [data-agent]) ----------
 function enAttente() {
   return messages(filAgence()).filter(m => m.de === 'fichier' && m.statut === 'attente').length;
 }
-const POSTE = { digital: 'production' };
+// Chaque agent a son bureau dans les locaux (Jade et Nino au Studio)
+const POSTE = {};
 function poste(id) { return document.querySelector(`.locaux [data-agent="${CSS.escape(POSTE[id] || id)}"]`); }
 // Ajuste les pastilles et les bulles à la largeur de leur texte
 function ajusterEtiquette(e) {
@@ -485,6 +486,7 @@ function fenetreBrief() {
     html: `<form id="form-brief">
 <label class="champ"><span>Nom du projet</span><input name="nom" maxlength="80" placeholder="Ex. Oasis, campagne été 2027" required></label>
 <div class="champ"><span>Type</span><div class="types">${types.map(([v, t, d], i) => `<label><input type="radio" name="type" value="${v}" ${i ? '' : 'checked'}>${t}<small>${d}</small></label>`).join('')}</div></div>
+<label class="champ"><span>Date de rendu <small>(facultatif)</small></span><input name="rendu" type="date"></label>
 <label class="champ"><span>Le brief</span><textarea name="texte" maxlength="30000" placeholder="Colle le brief : la demande, le livrable, la date de rendu, les consignes et la grille du prof si tu les as." required></textarea></label>
 </form>
 <div class="separateur">Juste une petite demande ? Va directement au bon bureau</div>
@@ -502,6 +504,44 @@ async function fenetreDossier() {
       `<div class="separateur">Images du projet (photos, maquettes, visuels générés)</div>
 <div class="depot-images" data-zone="images"><p>Glisse tes images ici, ou <button class="lien" data-a="choisir-images">choisis-les</button>. PNG, JPG, WEBP ou GIF, 10 Mo au plus.<br>Jade les utilisera dans les présentations et les sites.</p><input type="file" id="fichiers-images" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden></div>
 <div class="galerie">${(p && p.images || []).map(n => `<figure><img src="/api/image?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(n)}&jeton=${JETON}" alt=""><figcaption>${esc(n)}</figcaption></figure>`).join('')}</div>`,
+    bas: '<button class="bouton" data-a="fermer">Fermer</button>'
+  });
+}
+// La Culthèque : les fiches de campagnes de référence, lisibles depuis l'agence
+async function fenetreCultheque() {
+  let fiches = [];
+  try { ({ fiches } = await api('/api/campagnes')); } catch (e) { toast(e.message); return; }
+  fenetre({
+    cle: 'cultheque', agentId: 'production', titre: 'Culthèque', sous: 'Les campagnes de référence de l\'agence', largeur: 640,
+    html: fiches.length
+      ? `<div class="liste-fichiers">${fiches.map(f => `<button data-a="lire-campagne" data-v="${esc(f.nom)}">${esc(f.titre)}</button>`).join('')}</div>`
+      : '<p>Aucune fiche pour l\'instant.</p>',
+    bas: '<button class="bouton" data-a="fermer">Fermer</button>'
+  });
+}
+async function lireCampagne(nom) {
+  try {
+    const { contenu } = await api(`/api/campagne?nom=${encodeURIComponent(nom)}`);
+    fenetre({ cle: 'campagne:' + nom, agentId: 'production', titre: nom.replace(/\.md$/, ''), sous: 'docs/campagnes/', largeur: 680,
+      html: `<div class="md">${md(contenu)}</div>`, bas: '<button class="bouton" data-a="fermer">Fermer</button>' });
+  } catch (e) { toast(e.message); }
+}
+// Le suivi : pour chaque projet, l'étape en cours, la date de rendu et le coût (calculés par le serveur)
+function fenetreSuivi() {
+  const date = d => /^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(d + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : d;
+  const lignes = E.projets.map(p => {
+    const a = p.avancement;
+    const barre = a.etapes.map(e => `<i class="${e.fait ? 'fait' : ''}" title="${esc(e.nom)}"></i>`).join('');
+    return `<button class="suivi-ligne" type="button" data-a="suivre" data-v="${esc(p.slug)}">
+<span class="suivi-tete"><strong>${esc(p.nom)}</strong><span class="suivi-type">${esc(p.type)}</span></span>
+<span class="suivi-barre" aria-hidden="true">${barre}</span>
+<span class="suivi-info">${a.courante ? 'Étape en cours : ' + esc(a.courante) : 'Tout est prêt'} · ${a.faites}/${a.total}</span>
+<span class="suivi-info">${p.rendu ? 'Rendu : ' + esc(date(p.rendu)) : 'Pas de date de rendu'}${p.consignes ? ' · grille du prof là' : ''} · ${p.cout.toFixed(2)} $</span>
+</button>`;
+  }).join('');
+  fenetre({
+    cle: 'suivi', agentId: 'production', titre: 'Suivi des projets', sous: 'Où en est chaque projet dans le circuit', largeur: 680,
+    html: E.projets.length ? `<div class="suivi-liste">${lignes}</div>` : '<p>Aucun projet pour l\'instant. Donne un brief pour commencer.</p>',
     bas: '<button class="bouton" data-a="fermer">Fermer</button>'
   });
 }
@@ -546,6 +586,13 @@ async function lireFichier(nom) {
       bas: '<button class="bouton" data-a="fermer">Fermer</button>' });
     return chargerApercu(w, { projet: E.projet, nom });
   }
+  if (/\.mp4$/.test(nom)) {
+    const adresse = `/api/video?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(nom)}&jeton=${JETON}`;
+    fenetre({ cle: 'lire:' + E.projet + '/' + nom, agentId: 'motion', titre: nom, sous: `projets/${E.projet}/`, largeur: 680,
+      html: `<p class="chemin">projets/${esc(E.projet)}/${esc(nom)}</p><video class="lecteur-video" controls playsinline preload="metadata" src="${adresse}" aria-label="Vidéo du projet"></video>`,
+      bas: '<button class="bouton" data-a="fermer">Fermer</button>' });
+    return;
+  }
   try {
     const { contenu } = await api(`/api/fichier?projet=${encodeURIComponent(E.projet)}&nom=${encodeURIComponent(nom)}`);
     fenetre({ cle: 'lire:' + E.projet + '/' + nom, agentId: 'production', titre: nom, sous: `projets/${E.projet}/`, html: `<div class="md">${md(contenu)}</div>`, bas: '<button class="bouton" data-a="fermer">Fermer</button>', largeur: 680 });
@@ -580,6 +627,10 @@ document.addEventListener('click', async ev => {
     case 'nouveau-brief': fenetreBrief(); break;
     case 'circuit': jouerCircuit(); break;
     case 'dossier': document.querySelector('.menu-poste')?.remove(); fenetreDossier(); break;
+    case 'suivi': document.querySelector('.menu-poste')?.remove(); fenetreSuivi(); break;
+    case 'cultheque': document.querySelector('.menu-poste')?.remove(); fenetreCultheque(); break;
+    case 'lire-campagne': lireCampagne(v); break;
+    case 'suivre': fermer(w); changerProjet(v); break;
     case 'lire': lireFichier(v); break;
     case 'fermer': fermer(w); break;
     case 'theme': {
@@ -652,9 +703,9 @@ document.addEventListener('click', async ev => {
       const d = new FormData(f);
       cible.disabled = true;
       try {
-        const r = await api('/api/brief', { nom: d.get('nom'), type: d.get('type'), texte: d.get('texte') });
+        const r = await api('/api/brief', { nom: d.get('nom'), type: d.get('type'), texte: d.get('texte'), rendu: d.get('rendu') || '' });
         fermer(w, true);
-        if (!E.projets.some(p => p.slug === r.projet)) E.projets.unshift({ slug: r.projet, nom: d.get('nom'), type: d.get('type'), fichiers: ['brief.md'] });
+        if (!E.projets.some(p => p.slug === r.projet)) E.projets.unshift({ slug: r.projet, nom: d.get('nom'), type: d.get('type'), fichiers: ['brief.md'], rendu: d.get('rendu') || null, consignes: false, cout: 0, avancement: { faites: 0, total: 8, courante: 'Brief', etapes: [] } });
         rendreProjets();
         changerProjet(r.projet);
         toast('Brief transmis à Claire.');
@@ -697,7 +748,6 @@ $('#texte').addEventListener('keydown', ev => {
 });
 $('#texte').addEventListener('input', ajusterSaisie);
 $('#choix-projet').addEventListener('change', ev => changerProjet(ev.target.value));
-addEventListener('resize', () => { for (const b of document.querySelectorAll('.bulle')) b.remove(); });
 $('#voile').addEventListener('click', () => fermer(document.querySelector('.fenetre[data-modale]')));
 
 // ---------- Le direct ----------
@@ -743,6 +793,7 @@ function recevoir(evt) {
 async function charger() {
   const e = await api('/api/etat');
   Object.assign(E, { equipe: e.equipe, pilote: e.pilote, projets: e.projets, fils: e.fils, enCours: new Set(e.enCours), pret: e.pret, github: e.github });
+  if (e.consultation) toast('Mode consultation : aucun agent ne tournera. Le suivi, les fiches et les vidéos restent là.', 6000);
   E.actifs = new Map(Object.entries(e.actifs || {}).map(([f, l]) => [f, new Set(l)]));
   if (E.projet && !E.projets.some(p => p.slug === E.projet)) E.projet = null;
   if (!estAgence(E.fil) && !E.equipe.some(a => a.id === E.fil)) E.fil = filAgence();

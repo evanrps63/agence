@@ -119,10 +119,7 @@ button, select, textarea { font: inherit; color: inherit; }
 .ecrit-noir { font: 800 .13px var(--police); fill: #2f2c3a; }
 .diapo-titre { font: 800 .14px var(--police); fill: #ffffff; letter-spacing: .01px; }
 .diapo { font: 700 .13px var(--police); fill: #3a3646; }
-.ecran-txt { font: 800 .1px var(--police); fill: #3a3646; }
 .affiche { font: 800 .14px var(--police); fill: #ffffff; text-anchor: middle; }
-.trace-dossier { fill: none; stroke: #e2a92a; stroke-width: 2.2; stroke-dasharray: 2 6; stroke-linecap: round; opacity: .9; animation: trace 1.4s linear infinite; }
-@keyframes trace { to { stroke-dashoffset: -16; } }
 .ombre-batiment { fill: var(--ombre-bat); opacity: .07; filter: blur(10px); }
 
 /* ---------- étiquettes des personnes ---------- */
@@ -138,7 +135,8 @@ button, select, textarea { font: inherit; color: inherit; }
 .agent { cursor: pointer; outline: none; }
 .agent:hover .pastille, .agent:focus-visible .pastille { stroke: var(--encre-2); }
 .agent .halo { opacity: 0; transition: opacity .3s; }
-.agent .bulle { opacity: 0; visibility: hidden; transition: opacity .3s; }
+.agent .bulle { opacity: 0; visibility: hidden; transform: translateY(4px) scale(.94); transform-box: fill-box; transform-origin: 50% 100%; transition: opacity .25s ease-out, transform .35s cubic-bezier(.2, .9, .3, 1.25), visibility 0s .35s; }
+.agent.actif .bulle, .agent.parle .bulle { transform: none; transition: opacity .25s ease-out, transform .35s cubic-bezier(.2, .9, .3, 1.25), visibility 0s; }
 .bulle-texte { font: 700 12px var(--police); fill: #ffffff; }
 .bulle-texte tspan { animation: point 1.4s infinite; }
 .bulle-texte .p2 { animation-delay: .2s; } .bulle-texte .p3 { animation-delay: .4s; }
@@ -151,22 +149,69 @@ button, select, textarea { font: inherit; color: inherit; }
 @keyframes halo { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 @keyframes flotte { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
 
-/* ---------- vie : respiration, clignements, frappe ---------- */
-.respire { animation: respire 4.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
-@keyframes respire { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.022); } }
+/* ---------- vie : respiration, regard, clignements, frappe ---------- */
+/* Chacun son rythme : rien ne bouge en même temps, comme dans un vrai bureau. */
+.respire { animation: respire 4.4s cubic-bezier(.45, .05, .55, .95) infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes respire { 0%, 100% { transform: scale(1, 1); } 45% { transform: scale(1.012, 1.024); } }
+[data-agent="clientele"] .respire { animation-duration: 4.1s; }
+[data-agent="jury"] .respire { animation-duration: 5.3s; }
+[data-agent="planning"] .respire { animation-duration: 4.7s; }
+[data-agent="etudes"] .respire { animation-duration: 3.9s; }
+[data-agent="social"] .respire { animation-duration: 4.3s; }
+[data-agent="media"] .respire { animation-duration: 4.9s; }
+[data-agent="redaction"] .respire { animation-duration: 4s; }
+[data-agent="direction-artistique"] .respire { animation-duration: 4.6s; }
+[data-agent="digital"] .respire { animation-duration: 4.2s; }
+[data-agent="motion"] .respire { animation-duration: 4.8s; }
+
+/* La tête regarde autour, puis revient à l'écran. Visage (.tete) et cheveux de derrière (.nuque) tournent ensemble autour du cou. */
+.tete, .nuque { transform-origin: 0 14px; animation: regarde 13s cubic-bezier(.45, .05, .55, .95) infinite; }
+@keyframes regarde { 0%, 16% { transform: rotate(0); } 22%, 38% { transform: rotate(-2.4deg); } 44%, 60% { transform: rotate(0); } 66%, 76% { transform: rotate(1.8deg); } 82%, 100% { transform: rotate(0); } }
+[data-agent="clientele"] :is(.tete, .nuque) { animation-delay: -2s; animation-duration: 11.5s; }
+[data-agent="jury"] :is(.tete, .nuque) { animation-delay: -7s; animation-duration: 16s; }
+[data-agent="planning"] :is(.tete, .nuque) { animation-delay: -4.5s; animation-duration: 14s; }
+[data-agent="etudes"] :is(.tete, .nuque) { animation-delay: -9s; animation-duration: 12s; }
+[data-agent="social"] :is(.tete, .nuque) { animation-delay: -1s; animation-duration: 10.5s; }
+[data-agent="media"] :is(.tete, .nuque) { animation-delay: -11s; animation-duration: 15s; }
+[data-agent="redaction"] :is(.tete, .nuque) { animation-delay: -6s; animation-duration: 12.5s; }
+[data-agent="direction-artistique"] :is(.tete, .nuque) { animation-delay: -3s; animation-duration: 13.5s; }
+[data-agent="digital"] :is(.tete, .nuque) { animation-delay: -8s; animation-duration: 11s; }
+[data-agent="motion"] :is(.tete, .nuque) { animation-delay: -5s; animation-duration: 14.5s; }
+
+/* Les yeux clignent ; certains font un double clignement de temps en temps. */
 .yeux { animation: cligne 5.2s infinite; transform-box: fill-box; transform-origin: 50% 50%; }
 @keyframes cligne { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(.12); } }
+@keyframes cligne-double { 0%, 86%, 89%, 92%, 100% { transform: scaleY(1); } 87.5%, 90.5% { transform: scaleY(.12); } }
+[data-agent="clientele"] .yeux { animation-delay: -2.8s; animation-duration: 5.5s; }
 [data-agent="jury"] .yeux { animation-delay: -1.7s; animation-duration: 6.1s; }
 [data-agent="planning"] .yeux { animation-delay: -3.1s; }
 [data-agent="etudes"] .yeux { animation-delay: -.6s; animation-duration: 4.6s; }
-[data-agent="social"] .yeux { animation-delay: -2.4s; animation-duration: 5.7s; }
+[data-agent="social"] .yeux { animation-name: cligne-double; animation-delay: -2.4s; animation-duration: 7.4s; }
 [data-agent="media"] .yeux { animation-delay: -4.2s; }
 [data-agent="redaction"] .yeux { animation-delay: -1.1s; animation-duration: 6.4s; }
 [data-agent="direction-artistique"] .yeux { animation-delay: -3.6s; animation-duration: 4.9s; }
-.tape .main-g { animation: tape .5s ease-in-out infinite; }
-.tape .main-d { animation: tape .5s ease-in-out infinite -.25s; }
-.actif .tape .main-g, .actif .tape .main-d { animation-duration: .3s; }
+[data-agent="digital"] .yeux { animation-name: cligne-double; animation-delay: -5.1s; animation-duration: 6.8s; }
+[data-agent="motion"] .yeux { animation-delay: -.9s; animation-duration: 5.8s; }
+
+/* Les mains : au repos, une courte rafale de frappe puis une pause. */
+.tape .main-g { animation: rafale 4.6s ease-in-out infinite; }
+.tape .main-d { animation: rafale 4.6s ease-in-out infinite -.12s; }
+@keyframes rafale { 0%, 4%, 8%, 12%, 16%, 20% { transform: translateY(0); } 2%, 6%, 10%, 14%, 18% { transform: translateY(-2.2px); } 22%, 100% { transform: translateY(0); } }
+[data-agent="etudes"] .tape :is(.main-g, .main-d) { animation-delay: -1.3s; }
+[data-agent="social"] .tape :is(.main-g, .main-d) { animation-delay: -2.9s; }
+[data-agent="media"] .tape :is(.main-g, .main-d) { animation-delay: -.7s; }
+[data-agent="redaction"] .tape :is(.main-g, .main-d) { animation-delay: -3.8s; }
+[data-agent="digital"] .tape :is(.main-g, .main-d) { animation-delay: -2.2s; }
+[data-agent="motion"] .tape :is(.main-g, .main-d) { animation-delay: -4.1s; }
+
+/* Au travail (l'agent travaille vraiment, d'après le serveur) : frappe continue, tête penchée vers l'écran, écran qui vit. */
+.agent.actif .tape .main-g { animation: tape .32s ease-in-out infinite; }
+.agent.actif .tape .main-d { animation: tape .32s ease-in-out infinite -.16s; }
 @keyframes tape { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.4px); } }
+.agent.actif :is(.tete, .nuque) { animation: concentre 2.8s cubic-bezier(.45, .05, .55, .95) infinite; }
+@keyframes concentre { 0%, 100% { transform: rotate(1.4deg) translateY(.4px); } 50% { transform: rotate(2.6deg) translateY(.9px); } }
+.agent.actif .logo-portable { animation: ecran 1.9s ease-in-out infinite; }
+@keyframes ecran { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 .dessine .main-d { animation: dessine 2.6s ease-in-out infinite; }
 @keyframes dessine { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-3px, 1.5px); } 50% { transform: translate(-1px, 3px); } 75% { transform: translate(2px, 1px); } }
 .plante { animation: balance 6.5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
@@ -197,7 +242,6 @@ button, select, textarea { font: inherit; color: inherit; }
 :root:not([data-theme=light]) .reflet { opacity: .06; }
 :root:not([data-theme=light]) .logo-portable { filter: drop-shadow(0 0 2px rgba(255,255,255,.9)); }
 :root:not([data-theme=light]) .vapeur path { stroke: #d9d4ef; }
-:root:not([data-theme=light]) .trace-dossier { stroke: #f0b43a; }
 :root:not([data-theme=light]) .ombre-batiment { opacity: .5; }
 :root:not([data-theme=light]) .etiquette .pastille { filter: drop-shadow(0 2px 0 rgba(0,0,0,.4)); }
 }
@@ -209,7 +253,6 @@ button, select, textarea { font: inherit; color: inherit; }
 :root[data-theme=dark] .reflet { opacity: .06; }
 :root[data-theme=dark] .logo-portable { filter: drop-shadow(0 0 2px rgba(255,255,255,.9)); }
 :root[data-theme=dark] .vapeur path { stroke: #d9d4ef; }
-:root[data-theme=dark] .trace-dossier { stroke: #f0b43a; }
 :root[data-theme=dark] .ombre-batiment { opacity: .5; }
 :root[data-theme=dark] .etiquette .pastille { filter: drop-shadow(0 2px 0 rgba(0,0,0,.4)); }
 
@@ -313,7 +356,7 @@ button, select, textarea { font: inherit; color: inherit; }
 .saisie textarea:focus { border-color: var(--primaire); }
 .saisie .bouton { height: 44px; padding: 0 18px; font-size: 14px; border-radius: 13px; }
 
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } .agent .bulle { transition: none !important; transform: none !important; } }
 
 
 :root[data-theme=light] { color-scheme: light; }
@@ -338,10 +381,6 @@ button, select, textarea { font: inherit; color: inherit; }
 .agent.parle .bulle { opacity: 1; visibility: visible; }
 .dossier-vol { opacity: 0; transition: transform .9s cubic-bezier(.5, 0, .2, 1), opacity .3s; pointer-events: none; }
 .dossier-vol.visible { opacity: 1; }
-.agent .compteur { display: none; }
-.agent.attend .compteur { display: inline; }
-.compteur circle { fill: var(--orange); }
-.compteur text { font: 800 11px var(--police); fill: #fff; text-anchor: middle; }
 
 .menu-poste { position: fixed; z-index: 60; background: var(--carte); border: 1px solid var(--trait); border-radius: 14px; box-shadow: 0 3px 0 var(--relief), 0 16px 32px -12px rgba(30, 24, 70, .35); padding: 6px; min-width: 230px; }
 .menu-poste .entete { display: flex; align-items: center; gap: 10px; padding: 6px 8px 9px; border-bottom: 1px solid var(--trait); margin-bottom: 4px; }
@@ -484,3 +523,18 @@ button, select, textarea { font: inherit; color: inherit; }
 .galerie figure { margin: 0; }
 .galerie img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--trait); display: block; }
 .galerie figcaption { font-size: 11px; color: var(--encre-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Le suivi des projets */
+.suivi-liste { display: grid; gap: 9px; }
+.suivi-ligne { display: grid; gap: 6px; text-align: left; border: 1px solid var(--trait); background: var(--carte); border-radius: 12px; padding: 11px 13px; cursor: pointer; box-shadow: 0 2px 0 var(--relief); color: inherit; font: inherit; }
+.suivi-ligne:hover { border-color: var(--accent, var(--trait)); }
+.suivi-tete { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.suivi-type { font-size: 12px; opacity: .7; }
+.suivi-barre { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.suivi-barre i { height: 6px; border-radius: 3px; background: var(--trait); opacity: .5; }
+.suivi-barre i.fait { background: var(--accent, #0f766e); opacity: 1; }
+.suivi-info { font-size: 13px; opacity: .85; }
+.champ small { font-weight: 400; opacity: .7; }
+
+/* Le lecteur vidéo du studio */
+.lecteur-video { display: block; width: 100%; max-height: 70vh; border-radius: 12px; background: #000; }

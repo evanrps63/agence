@@ -13,6 +13,8 @@ import crypto from 'crypto';
 import { spawn, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { photographier, trouverChrome } from './rendu.mjs';
+import { avancement, dateRendu } from './suivi.mjs';
+import { rendreVideo, verifierComposition } from './video.mjs';
 
 const code = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const racine = process.env.AGENCE_RACINE || code;
@@ -75,15 +77,18 @@ Le circuit d'une recommandation : brief → reformulation (toi) → insights (et
 - Après Jade, le studio ouvre tout seul chaque fichier .html dans un navigateur, Léa critique le rendu et Jade corrige avant qu'Evan le voie : n'appelle pas Léa ni le jury pour ça.
 - Pour un site internet, une page web ou une présentation, appelle digital (Jade) une fois la stratégie et l'idée créative validées, en lui donnant les fichiers du projet à lire. Ses fichiers .html arrivent tout seuls au studio : ne les recopie jamais.
 - Un agent peut proposer lui-même un fichier avec un bloc FICHIER : il arrive directement au studio, ne le recopie pas.
-- Sois économe : n'appelle que les agents utiles à la demande, donne-leur un contexte court (le brief résumé, les décisions d'Evan, les fichiers à lire) plutôt que tout l'historique, et ne refais pas un travail déjà validé.`;
+- Sois économe : n'appelle que les agents utiles à la demande, donne-leur un contexte court (le brief résumé, les décisions d'Evan, les fichiers à lire) plutôt que tout l'historique, et ne refais pas un travail déjà validé.
+- Les trames des livrables sont dans projets/_modeles/ : idee-creative.md (Hugo), dispositif-social.md (Sam), dispositif-media.md (Nora), storyboard-video.md (Nino, pour une vidéo), relecture.md (le Jury), fiche-travail-cours.md (cours). Quand un agent écrit un de ces fichiers, il reprend la trame du même nom : mêmes titres de sections, dans le même ordre.
+- Les sources déjà vérifiées sont dans docs/sources.md : Inès part de cette liste avant de chercher sur le web.`;
   if (info) {
     texte += `
 
 ## Le projet en cours
 Nom : ${info.nom}. Type : ${info.type}. Dossier : projets/${projet}/ (fichiers : ${info.fichiers.join(', ') || 'aucun'}).
+Date de rendu : ${info.rendu || 'non indiquée'}. Grille du prof : ${info.consignes ? 'oui, dans consignes-prof.md (le Jury la suit en premier)' : 'non fournie'}.
 Images fournies par Evan dans projets/${projet}/images/ : ${info.images.join(', ') || 'aucune'}. Dis-le à Jade quand tu l'appelles.`;
     if (info.type === 'cours') texte += `
-C'est un projet de COURS : l'agence aide Evan à réfléchir (explique, challenge, structure, propose des pistes, relit). Les fichiers proposés sont des fiches de travail (plan, questions, pistes, relecture) ; la version rendue au prof est écrite par Evan.`;
+C'est un projet de COURS : l'agence aide Evan à réfléchir (explique, challenge, structure, propose des pistes, relit). Les fichiers proposés sont des fiches de travail (plan, questions, pistes, relecture) suivant la trame fiche-travail-cours.md ; la version rendue au prof est écrite par Evan.`;
   } else {
     texte += `
 
@@ -106,6 +111,8 @@ try {
     const outils = (fm.tools || 'Read, Grep, Glob').split(',').map(s => s.trim()).filter(o => OUTILS_PERMIS.includes(o));
     DEFS[id] = {
       description: fm.description || '', prompt: m[2], tools: outils,
+      // Les skills de l'agent (design, motion, Remotion…) : passés au CLI, s'il les accepte
+      skills: (fm.skills || '').split(',').map(s => s.trim()).filter(Boolean),
       prenom: fm.prenom || id, poste: fm.poste || '', piece: fm.piece || 'openspace',
       couleur: /^#[0-9a-f]{6}$/i.test(fm.couleur || '') ? fm.couleur : '#475569',
       // Le modèle de l'agent : haiku (rapide, économe), sonnet (équilibré), opus (réflexion poussée)
@@ -115,18 +122,20 @@ try {
 } catch { console.log("Le dossier .claude/agents/ est introuvable : lance l'agence depuis son dossier."); process.exit(1); }
 const AGENTS = Object.keys(DEFS);
 if (!DEFS[PILOTE]) { console.log(`L'agent ${PILOTE} (pilote de l'agence) est introuvable dans .claude/agents/.`); process.exit(1); }
-const pourClaude = d => ({ description: d.description, prompt: d.prompt, tools: d.tools, model: process.env.AGENCE_MODELE || d.model });
+const pourClaude = d => ({ description: d.description, prompt: d.prompt, tools: d.tools, ...(d.skills.length ? { skills: d.skills } : {}), model: process.env.AGENCE_MODELE || d.model });
 
 // Options de sécurité. Sans --restricted (Claude Code trop ancien), on ne lance aucun agent : ils pourraient lire tout le disque.
 const aide = (() => { try { return spawnSync(CLAUDE, ['--help'], { encoding: 'utf8', timeout: 20000 }).stdout || ''; } catch { return ''; } })();
 const connu = o => aide.includes(o);
 const RESTREINT = connu('--restricted');
 const PROTEGE = RESTREINT;
+// Mode consultation (npm run agence -- --consulter) : le suivi, les fiches et les vidéos restent accessibles, mais aucun agent ne se lance
+const CONSULTATION = process.argv.includes('--consulter') || process.env.AGENCE_CONSULTER === '1';
 const TROP_ANCIEN = "Claude Code est absent ou trop ancien pour l'agence : tape « claude update » dans le Terminal, puis relance l'agence.";
 
 // ---------- Projets ----------
 const SLUG = /^[a-z0-9][a-z0-9-]{0,59}$/;
-const NOM_FICHIER = /^[a-z0-9][a-z0-9_-]{0,59}\.(md|html)$/;
+const NOM_FICHIER = /^[a-z0-9][a-z0-9_-]{0,59}\.(md|html|tsx|mp4)$/;
 const RESERVES = /^(claude|claude\.local|agents?|readme)\.md$/i;
 const TYPES = ['cours', 'perso', 'client'];
 function slugifier(s) {
@@ -148,7 +157,13 @@ function lireProjet(slug) {
   try { fichiers = fs.readdirSync(d).filter(f => NOM_FICHIER.test(f) && fs.lstatSync(path.join(d, f)).isFile()).sort(); } catch {}
   let images = [];
   try { images = fs.readdirSync(path.join(d, 'images')).filter(f => IMAGES.test(f) && fs.lstatSync(path.join(d, 'images', f)).isFile()).sort(); } catch {}
-  return { slug, nom: typeof meta.nom === 'string' ? meta.nom : slug, type: TYPES.includes(meta.type) ? meta.type : 'perso', cree: meta.cree || null, fichiers, images };
+  let brief = '';
+  try { brief = fs.readFileSync(path.join(d, 'brief.md'), 'utf8'); } catch {}
+  return {
+    slug, nom: typeof meta.nom === 'string' ? meta.nom : slug, type: TYPES.includes(meta.type) ? meta.type : 'perso', cree: meta.cree || null, fichiers, images,
+    rendu: dateRendu(brief), avancement: avancement(fichiers), consignes: fichiers.includes('consignes-prof.md'),
+    cout: Number(conversations['agence:' + slug]?.cout) || 0
+  };
 }
 function listerProjets() {
   try { return fs.readdirSync(PROJETS).filter(s => !s.startsWith('_')).map(lireProjet).filter(Boolean).sort((a, b) => String(b.cree).localeCompare(String(a.cree))); }
@@ -158,7 +173,7 @@ function listerProjets() {
 function cheminPermis(chemin, projet) {
   const c = String(chemin || '').trim();
   if (!projet) return { erreur: "aucun projet n'est ouvert" };
-  const m = c.match(/^projets\/([a-z0-9][a-z0-9-]{0,59})\/([a-z0-9][a-z0-9_-]{0,59}\.(?:md|html))$/);
+  const m = c.match(/^projets\/([a-z0-9][a-z0-9-]{0,59})\/([a-z0-9][a-z0-9_-]{0,59}\.(?:md|html|tsx))$/);
   if (!m) {
     if (c.includes('..')) return { erreur: 'le chemin sort du dossier du projet' };
     if (/^projets\/[^/]+\/[^/]+\/./.test(c)) return { erreur: 'les sous-dossiers ne sont pas permis' };
@@ -316,6 +331,8 @@ const tuerTout = () => { for (const e of enCours.values()) e.tuer(); };
 
 const aRendre = new Map();
 function proposerFichier(fil, agent, projet, f, options = {}) {
+  // Jade livre toujours du HTML : un diapo rangé en .md ne s'afficherait pas en aperçu au studio
+  if (agent === 'digital') f = { ...f, chemin: String(f.chemin).replace(/\.md$/i, '.html') };
   const ok = cheminPermis(f.chemin, projet);
   if (ok.erreur) {
     // Le contenu n'est pas perdu : il reste lisible dans une proposition
@@ -323,6 +340,14 @@ function proposerFichier(fil, agent, projet, f, options = {}) {
     ajouter(fil, { de: 'proposition', agent, titre: `Fichier non enregistrable : ${String(f.chemin).split('/').pop().slice(0, 60)}`,
       texte: `> Le serveur n'a pas pu proposer ce fichier au studio : ${ok.erreur}. Son contenu est gardé ici. Demande à Claire de le reproposer sous un nom permis.\n\n${f.contenu.slice(0, MAX_FICHIER)}` });
     return;
+  }
+  // Une vidéo : son code doit passer les garde-fous avant d'arriver au studio
+  if (/\.tsx$/.test(ok.relatif)) {
+    const verif = verifierComposition(f.contenu);
+    if (verif.erreur) {
+      ajouter(fil, { de: 'etape', agent, texte: `Vidéo refusée (${ok.relatif}) : ${verif.erreur}. Demande à Nino de corriger.`, alerte: true });
+      return;
+    }
   }
   // Un site ou une présentation passe d'abord à l'atelier de rendu (navigateur, critique, correction)
   if (/\.html$/.test(ok.relatif) && !options.final && TOURS >= 0 && !process.env.AGENCE_SANS_ATELIER) {
@@ -471,6 +496,13 @@ function lancer(fil, texte, visible = texte) {
     const { texte: propre, fichiers } = decouper(rapport || '');
     if (propre) ajouter(fil, { de: 'proposition', agent: appel.agent, texte: propre.slice(0, 60000), erreur });
     for (const f of fichiers) proposerFichier(fil, appel.agent, projet, f);
+    // Jade doit livrer un fichier complet : sinon Evan ne voit jamais de diapo, et ne sait pas pourquoi
+    if (appel.agent === 'digital' && !fichiers.length && projet) {
+      const coupe = /<<<FICHIER/.test(rapport || '');
+      ajouter(fil, { de: 'etape', agent: 'digital', alerte: true, texte: coupe
+        ? "Jade a commencé le fichier mais la réponse s'est arrêtée avant la fin : rien n'est arrivé au studio. Demande-lui de le refaire plus court (une slide à la fois, ou un site plus simple)."
+        : "Jade n'a pas livré de fichier : elle a répondu sans bloc FICHIER. Vérifie que reco.md et strategie.md existent dans le dossier, puis redemande." });
+    }
   };
   // Décodage UTF-8 qui recolle les caractères coupés entre deux morceaux
   p.stdout.setEncoding('utf8');
@@ -554,6 +586,18 @@ function lancer(fil, texte, visible = texte) {
     if (projet && aRendre.has(fil)) atelier(fil, projet);
   });
   p.stdin.end(texte);
+}
+
+// ---------- Vidéos ----------
+// Après la validation d'une composition, le serveur fabrique le MP4 à côté (projets/<projet>/<nom>.mp4)
+async function rendreVideoProjet(fil, projet, chemin) {
+  const source = path.join(racine, chemin);
+  const sortie = source.replace(/\.tsx$/, '.mp4');
+  ajouter(fil, { de: 'etape', agent: 'production', texte: `Vidéo en cours de fabrication : ${path.basename(sortie)} (quelques dizaines de secondes)` });
+  const r = await rendreVideo(source, sortie);
+  if (r.erreur) ajouter(fil, { de: 'etape', agent: 'production', texte: `La vidéo n'a pas pu être fabriquée : ${r.erreur}`, alerte: true });
+  else ajouter(fil, { de: 'etape', agent: 'production', texte: `Vidéo prête : projets/${projet}/${path.basename(sortie)} (${Math.round(r.duree)} s)` });
+  diffuser({ type: 'projets', projets: listerProjets() });
 }
 
 // ---------- Git (seulement pour « Envoyer sur GitHub ») ----------
@@ -744,7 +788,7 @@ async function traiter(req, res) {
     const equipe = AGENTS.map(a => ({ id: a, prenom: DEFS[a].prenom, poste: DEFS[a].poste, piece: DEFS[a].piece, couleur: DEFS[a].couleur, description: DEFS[a].description, web: DEFS[a].tools.includes('WebSearch'), model: DEFS[a].model }));
     const fils = {};
     for (const [f, c] of Object.entries(conversations)) fils[f] = { messages: c.messages, cout: c.cout || 0 };
-    return envoyer(res, 200, { equipe, pilote: PILOTE, projets: listerProjets(), fils, enCours: [...enCours.keys()], actifs: actifs(), pret: PROTEGE, github: !!(await depot()), navigateur: !!trouverChrome() });
+    return envoyer(res, 200, { equipe, pilote: PILOTE, projets: listerProjets(), fils, enCours: [...enCours.keys()], actifs: actifs(), consultation: CONSULTATION, pret: PROTEGE, github: !!(await depot()), navigateur: !!trouverChrome() });
   }
   if (req.method === 'GET' && url.pathname === '/api/image') {
     const d = dossierProjet(url.searchParams.get('projet'));
@@ -754,6 +798,39 @@ async function traiter(req, res) {
     try {
       if (fs.lstatSync(f).isSymbolicLink()) throw 0;
       res.writeHead(200, { 'Content-Type': TYPES_IMAGES[nomImage.split('.').pop()], ...SECURITE });
+      return res.end(fs.readFileSync(f));
+    } catch { return envoyer(res, 404, { erreur: 'introuvable' }); }
+  }
+  // La Culthèque : les fiches de campagnes (docs/campagnes/), lecture seule
+  if (req.method === 'GET' && url.pathname === '/api/campagnes') {
+    const d = path.join(racine, 'docs', 'campagnes');
+    let noms = [];
+    try { noms = fs.readdirSync(d).filter(n => /^[a-z0-9][a-z0-9-]{0,80}\.md$/.test(n)).sort(); } catch {}
+    const fiches = noms.map(nom => {
+      const texte = fs.readFileSync(path.join(d, nom), 'utf8');
+      const titre = (texte.split('\n').find(l => /^#\s/.test(l)) || nom).replace(/^#\s*/, '').replace(/\*\*/g, '').slice(0, 160);
+      return { nom, titre };
+    });
+    return envoyer(res, 200, { fiches });
+  }
+  if (req.method === 'GET' && url.pathname === '/api/campagne') {
+    const nom = url.searchParams.get('nom') || '';
+    if (!/^[a-z0-9][a-z0-9-]{0,80}\.md$/.test(nom)) return envoyer(res, 400, { erreur: 'fiche invalide' });
+    try {
+      const f = path.join(racine, 'docs', 'campagnes', nom);
+      if (fs.lstatSync(f).isSymbolicLink()) throw 0;
+      return envoyer(res, 200, { contenu: fs.readFileSync(f, 'utf8') });
+    } catch { return envoyer(res, 404, { erreur: 'fiche introuvable' }); }
+  }
+  // La vidéo fabriquée par le serveur (projets/<projet>/<nom>.mp4), lue par le lecteur du studio
+  if (req.method === 'GET' && url.pathname === '/api/video') {
+    const d = dossierProjet(url.searchParams.get('projet'));
+    const nom = url.searchParams.get('nom') || '';
+    if (!d || !/^[a-z0-9][a-z0-9_-]{0,59}\.mp4$/.test(nom)) return envoyer(res, 400, { erreur: 'vidéo invalide' });
+    const f = path.join(d, nom);
+    try {
+      if (fs.lstatSync(f).isSymbolicLink()) throw 0;
+      res.writeHead(200, { 'Content-Type': 'video/mp4', ...SECURITE });
       return res.end(fs.readFileSync(f));
     } catch { return envoyer(res, 404, { erreur: 'introuvable' }); }
   }
@@ -802,10 +879,14 @@ async function traiter(req, res) {
     if (!dossierProjet(corps.projet) || !/^[a-z0-9][a-z0-9_-]{0,59}\.html$/.test(corps.nom || '')) return envoyer(res, 400, { erreur: 'aperçu impossible' });
     return envoyer(res, 200, { adresse: '/apercu/' + cleApercu({ projet: corps.projet, nom: corps.nom }) + '/' });
   }
+  if (CONSULTATION && ['/api/brief', '/api/message', '/api/choisir'].includes(url.pathname)) {
+    return envoyer(res, 423, { erreur: 'Mode consultation : aucun agent ne tourne. Relance l\'agence sans --consulter pour travailler avec l\'équipe.' });
+  }
   if (url.pathname === '/api/brief') {
     const nom = typeof corps.nom === 'string' ? corps.nom.trim().slice(0, 80) : '';
     const type = TYPES.includes(corps.type) ? corps.type : null;
     const texte = typeof corps.texte === 'string' ? corps.texte.trim() : '';
+    const rendu = typeof corps.rendu === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(corps.rendu) ? corps.rendu : '';
     const slug = slugifier(nom);
     if (!nom) return envoyer(res, 400, { erreur: 'Donne un nom au projet.' });
     if (!slug) return envoyer(res, 400, { erreur: 'Le nom du projet doit contenir au moins une lettre ou un chiffre.' });
@@ -819,7 +900,12 @@ async function traiter(req, res) {
     fs.mkdirSync(path.join(PROJETS, slug), { recursive: true });
     const cree = new Date().toISOString();
     fs.writeFileSync(path.join(PROJETS, slug, 'projet.json'), JSON.stringify({ nom, type, cree }, null, 2) + '\n');
-    fs.writeFileSync(path.join(PROJETS, slug, 'brief.md'), `# Brief : ${nom}\n\n**Type** : ${type}\n**Reçu le** : ${cree.slice(0, 10)}\n\n${texte}\n`);
+    fs.writeFileSync(path.join(PROJETS, slug, 'brief.md'), `# Brief : ${nom}\n\n**Type** : ${type}\n${rendu ? `**Date de rendu** : ${rendu}\n` : ''}**Reçu le** : ${cree.slice(0, 10)}\n\n${texte}\n`);
+    // Un projet de cours reçoit sa grille du prof vide : Evan la remplit, le Jury la lit en premier
+    if (type === 'cours') {
+      const trame = path.join(PROJETS, '_modeles', 'consignes-prof.md');
+      try { fs.copyFileSync(trame, path.join(PROJETS, slug, 'consignes-prof.md'), fs.constants.COPYFILE_EXCL); } catch {}
+    }
     // Un nouveau projet repart de zéro, même si un ancien projet du même nom a existé
     conversations[fil] = neuf();
     sauver();
@@ -871,6 +957,11 @@ async function traiter(req, res) {
       // Le fichier a-t-il changé depuis la proposition (autre validation, modification à la main) ?
       try { if (fs.statSync(ok.cible).mtimeMs > m.t) return envoyer(res, 409, { erreur: "Ce fichier a été modifié depuis cette proposition. Demande une nouvelle version à l'agence pour ne rien écraser." }); } catch {}
       const contenu = typeof corps.contenu === 'string' ? corps.contenu : m.contenu;
+      // Evan a pu modifier le code dans le studio : il est contrôlé à nouveau avant d'être écrit
+      if (/\.tsx$/.test(ok.relatif)) {
+        const verif = verifierComposition(contenu);
+        if (verif.erreur) return envoyer(res, 400, { erreur: 'Vidéo refusée : ' + verif.erreur });
+      }
       if (contenu.length > MAX_FICHIER) return envoyer(res, 413, { erreur: 'Fichier trop long (400 000 caractères au plus).' });
       fs.writeFileSync(ok.cible, contenu.endsWith('\n') ? contenu : contenu + '\n');
       m.statut = 'valide';
@@ -882,6 +973,7 @@ async function traiter(req, res) {
     sauver();
     maj(fil, m);
     diffuser({ type: 'projets', projets: listerProjets() });
+    if (m.statut === 'valide' && /\.tsx$/.test(m.chemin)) rendreVideoProjet(fil, projet, m.chemin);
     // L'agence le saura au prochain message
     const c = conv(fil);
     (c.studio ||= []).push(`${m.chemin} ${m.statut === 'valide' ? 'validé et enregistré' : 'refusé par Evan, rien écrit'}`);
